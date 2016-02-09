@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<p> Submit an answer! </p>
+        <form id="solve" action method="post">
+            <div>
+                Puzzle
+                <select name="puzzle_name">
+                    {% for puzz in puzzles %}
+                    <option value="{{puzz}}">{{puzz}}</option>
+                    {% endfor %}
+                </select>
+            </div>    
+            <div>
+                Guess
+                <input type="text" name="guess" maxlength="50">
+            </div>
+            <div>
+                Team
+                <select name="team_name">
+                    <option value="None" selected></option>
+                    {% for team in teams %}
+                    <option value="{{team}}">{{team}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                Team Password
+                <input type="text" name="password" maxlength="50">
+            </div>    
+            <input type="submit" value="Submit!">
+        </form>
+        {% endblock %}

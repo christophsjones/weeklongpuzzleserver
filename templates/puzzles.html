@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+    {% for (day, puzzles) in puzzdays %}
+        <div>
+            {{ day }}
+            {% for puzzle in puzzles %}
+            <a href="/puzzles/{{ puzzle }}.pdf">{{ puzzle }}</a>
+            {% endfor %}
+        </div>
+    {% endfor %}
+{% endblock %}
