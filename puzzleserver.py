@@ -57,7 +57,7 @@ class Root(object):
 
         try:
             with closing(self.cnx.cursor()) as cursor:
-                team_query = """SELECT team_name, password, total_solves, time_created FROM teams ORDER BY time_created"""
+                team_query = """SELECT team_name, password, time_created FROM teams ORDER BY time_created"""
                 cursor.execute(team_query)
                 teams = OrderedDict([(row['team_name'], row) for row in cursor])
                 
@@ -96,16 +96,16 @@ class Root(object):
             if guess == puzzles[puzzle_name]['answer']:
                 try:
                     with closing(self.cnx.cursor()) as cursor: 
+                        check_query = """SELECT team_name, puzzle_name, solved FROM solves WHERE team_name = %s AND puzzle_name = %s"""
+                        cursor.execute(check_query, (team_name, puzzle_name,))
+                        for row in cursor:
+                            if row['solved']:
+                                return error_tmpl.render('Answer is correct, but your team already solved this puzzle.')
 
                         solves_query = """UPDATE solves SET solved = 1 WHERE team_name = %s AND puzzle_name = %s"""
                         cursor.execute(solves_query, (team_name, puzzle_name,))
                         self.cnx.commit()
-                        num_updated = self.cnx.affected_rows()
 
-                        return error_tmpl.render(error='Answer is correct, but your team already solved this puzzle! Total submissions: ' + str(num_updated))
-                        total_solves_query = """UPDATE teams SET total_solves = total_solves + 1 WHERE team_name = %s"""
-                        cursor.execute(total_solves_query, (team_name))
-                        self.cnx.commit()
                 except MySQLdb.Error as e:
                     return error_tmpl.render(error='Could not update team solve stats. Please try submitting again.')
 
@@ -114,7 +114,6 @@ class Root(object):
                     team_name=team_name, 
                     puzzle_name=puzzle_name, 
                     guess=guess, 
-                    total_solves=teams[team_name]['total_solves'] + 1
                 )
             else:
                 tmpl = env.get_template('incorrect.html')
@@ -130,7 +129,7 @@ class Root(object):
     def teams(self):
         try:
             with closing(self.cnx.cursor()) as cursor:
-                query = """SELECT team_name, total_solves, time_last_solve FROM teams ORDER BY total_solves DESC, time_last_solve"""
+                query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, teams.time_last_solve AS time_last_solve FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, time_last_solve"""
                 cursor.execute(query)
                 teams = [(row['team_name'], row['total_solves']) for row in cursor]
         except MySQLdb.Error as e:
