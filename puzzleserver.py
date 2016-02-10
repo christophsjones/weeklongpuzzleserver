@@ -196,7 +196,7 @@ class Root(object):
         return tmpl.render()
 
 if __name__ == "__main__":
-    if 'prod' in argv:
+    if 'prod' in sys.argv:
         cherrypy.config.update({'server.socket_host': '0.0.0.0'})
     cherrypy.config.update({'server.socket_port': 5104, 'engine.autoreload.on': True }) 
     root = Root()
