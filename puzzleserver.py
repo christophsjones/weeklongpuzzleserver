@@ -7,13 +7,9 @@ import MySQLdb.cursors
 from contextlib import closing
 from collections import OrderedDict
 from os import getcwd
+import sys
 
-mysqldb_config = {
-        'user': 'pserver',
-        'passwd': 'nohints',
-        'db': 'puzzleserver',
-        'cursorclass': MySQLdb.cursors.DictCursor,
-        }
+from mysql_config import mysqldb_config
 
 def guess_autoescape(template_name):
     return True
@@ -26,6 +22,24 @@ day_ids = {2: 'Monday', 3: 'Tuesday', 4: 'Wednesday', 5: 'Meta'}
 class Root(object):
     cnx = MySQLdb.connect(**mysqldb_config) 
 
+    def sanitize_unicode(resource):
+        error_tmpl = env.get_template('error.html')
+        def safety_first(*args, **kwargs):
+            for arg in args:
+                if isinstance(arg, str) or isinstance(arg, unicode):
+                    try:
+                        arg.decode('utf-8')
+                    except UnicodeEncodeError:
+                        return error_tmpl.render(error='Input contains invalid characters')
+            for kwarg in kwargs.values():
+                if isinstance(kwarg, str) or isinstance(kwarg, unicode):
+                    try:
+                        kwarg.decode('utf-8')
+                    except UnicodeEncodeError:
+                        return error_tmpl.render(error='Input contains invalid characters')
+            return resource(*args, **kwargs)
+        return safety_first
+
     @cherrypy.expose
     def index(self):
         tmpl = env.get_template('home.html')
@@ -37,18 +51,23 @@ class Root(object):
         return tmpl.render()
 
     @cherrypy.expose
+    @sanitize_unicode
     def solve(self, team_name=None, password=None, puzzle_name=None, guess=None):
-        with closing(self.cnx.cursor()) as cursor:
-            team_query = """SELECT team_name, password, total_solves, time_created FROM teams ORDER BY time_created"""
-            cursor.execute(team_query)
-            teams = OrderedDict([(row['team_name'], row) for row in cursor])
-            
-            puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles ORDER BY release_date, number"""
-            cursor.execute(puzz_query)
-            puzzles = OrderedDict([(row['puzzle_name'], row) for row in cursor])
+        error_tmpl = env.get_template('error.html')
+
+        try:
+            with closing(self.cnx.cursor()) as cursor:
+                team_query = """SELECT team_name, password, total_solves, time_created FROM teams ORDER BY time_created"""
+                cursor.execute(team_query)
+                teams = OrderedDict([(row['team_name'], row) for row in cursor])
+                
+                puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles ORDER BY release_date, number"""
+                cursor.execute(puzz_query)
+                puzzles = OrderedDict([(row['puzzle_name'], row) for row in cursor])
+        except MySQLdb.Error as e:
+            return error_tmpl.render(error="Could not fetch puzzle list")
 
         if team_name is not None:
-            error_tmpl = env.get_template('error.html')
             if team_name == "None":
                 return error_tmpl.render(error='Gotta pick a team')
             if puzzle_name == "None":
@@ -56,7 +75,6 @@ class Root(object):
 
             if team_name not in teams:
                 return error_tmpl.render(error='Invalid team name')
-
             if password != teams[team_name]['password']:
                 return error_tmpl.render(error='Invalid password for team ' + team_name)
 
@@ -64,27 +82,32 @@ class Root(object):
                 return error_tmpl.render(error='Invalid puzzle name')
             if not isinstance(guess, str) and not isinstance(guess, unicode):
                 return error_tmpl.render(error='Invalid guess')
-            
-            with closing(self.cnx.cursor()) as cursor:
-                already_query = """SELECT team_name, puzzle_name, solved FROM solves WHERE team_name = %s AND puzzle_name = %s"""
-                cursor.execute(already_query, (team_name, puzzle_name))
-                for row in cursor:
-                    if row['solved'] == 1:
-                        return error_tmpl.render(error='Your team already solved this puzzle!')
 
-            with closing(self.cnx.cursor()) as cursor:
-                submit_query = """INSERT INTO submissions (team_name, puzzle_name, guess) VALUES (%s, %s, %s)"""
-                cursor.execute(submit_query, (team_name, puzzle_name, guess))
-                self.cnx.commit()
-            
             guess = guess.upper()
-            if guess == puzzles[puzzle_name]['answer']:
-                with closing(self.cnx.cursor()) as cursor: 
-                    total_solves_query = """UPDATE teams SET total_solves = total_solves + 1 WHERE team_name = %s"""
-                    cursor.execute(total_solves_query, (team_name))
-                    solves_query = """UPDATE solves SET solved = 1 WHERE team_name = %s AND puzzle_name = %s"""
-                    cursor.execute(solves_query, (team_name, puzzle_name))
+
+            try:
+                with closing(self.cnx.cursor()) as cursor:
+                    submit_query = """INSERT INTO submissions (team_name, puzzle_name, guess) VALUES (%s, %s, %s)"""
+                    cursor.execute(submit_query, (team_name, puzzle_name, guess))
                     self.cnx.commit()
+            except MySQLdb.Error as e:
+                pass # fail to record submissions silently
+            
+            if guess == puzzles[puzzle_name]['answer']:
+                try:
+                    with closing(self.cnx.cursor()) as cursor: 
+
+                        solves_query = """UPDATE solves SET solved = 1 WHERE team_name = %s AND puzzle_name = %s"""
+                        cursor.execute(solves_query, (team_name, puzzle_name,))
+                        self.cnx.commit()
+                        num_updated = self.cnx.affected_rows()
+
+                        return error_tmpl.render(error='Answer is correct, but your team already solved this puzzle! Total submissions: ' + str(num_updated))
+                        total_solves_query = """UPDATE teams SET total_solves = total_solves + 1 WHERE team_name = %s"""
+                        cursor.execute(total_solves_query, (team_name))
+                        self.cnx.commit()
+                except MySQLdb.Error as e:
+                    return error_tmpl.render(error='Could not update team solve stats. Please try submitting again.')
 
                 tmpl = env.get_template('correct.html')
                 return tmpl.render(
@@ -105,21 +128,29 @@ class Root(object):
 
     @cherrypy.expose
     def teams(self):
-        with closing(self.cnx.cursor()) as cursor:
-            query = """SELECT team_name, total_solves, time_last_solve FROM teams ORDER BY total_solves DESC, time_last_solve"""
-            cursor.execute(query)
-            teams = [(row['team_name'], row['total_solves']) for row in cursor]
+        try:
+            with closing(self.cnx.cursor()) as cursor:
+                query = """SELECT team_name, total_solves, time_last_solve FROM teams ORDER BY total_solves DESC, time_last_solve"""
+                cursor.execute(query)
+                teams = [(row['team_name'], row['total_solves']) for row in cursor]
+        except MySQLdb.Error as e:
+            error_tmpl = env.get_template('error.html')
+            return error_tmpl.render('Could not fetch team names')
 
         tmpl = env.get_template('teams.html')
         return tmpl.render(teams=enumerate(teams))
 
     @cherrypy.expose
     def puzzles(self):
-        with closing(self.cnx.cursor()) as cursor:
-            query = """SELECT puzzle_name, release_date FROM puzzles"""
-            cursor.execute(query)
-            
-            res = cursor.fetchall()
+        try:
+            with closing(self.cnx.cursor()) as cursor:
+                query = """SELECT puzzle_name, release_date FROM puzzles"""
+                cursor.execute(query)
+                
+                res = cursor.fetchall()
+        except MySQLdb.Error as e:
+            error_tmpl = env.get_template('error.html')
+            return error_tmpl.render('Could not fetch puzzles')
 
         days = set([row['release_date'] for row in res])
         puzzdays = [(day, [row['puzzle_name'] for row in res if row['release_date'] == day]) for day in days]
@@ -129,14 +160,10 @@ class Root(object):
         return tmpl.render(puzzdays=puzzdays)
 
     @cherrypy.expose
+    @sanitize_unicode
     def register(self, team_name=None, password=None, password2=None):
         if team_name is not None:
             error_tmpl = env.get_template('error.html')
-            with closing(self.cnx.cursor()) as cursor:
-                query = """SELECT team_name FROM teams WHERE team_name = %s"""
-                cursor.execute(query, (team_name,))
-                if any(True for _ in cursor):
-                    return error_tmpl.render(error='Team name already taken')
 
             if password is None:
                 return error_tmpl.render(error='Invalid password')
@@ -145,12 +172,17 @@ class Root(object):
             if password != password2:
                 return error_tmpl.render(error='Passwords do not match')
 
-            with closing(self.cnx.cursor()) as cursor:
-                register_query = """INSERT INTO teams (team_name, password) VALUES (%s, %s)"""
-                cursor.execute(register_query, (team_name, password,))
-                solves_query = """INSERT INTO solves (team_name, puzzle_name) SELECT %s, puzzle_name FROM puzzles"""
-                cursor.execute(solves_query, (team_name,))
-                self.cnx.commit()
+            try:
+                with closing(self.cnx.cursor()) as cursor:
+                    register_query = """INSERT INTO teams (team_name, password) VALUES (%s, %s)"""
+                    cursor.execute(register_query, (team_name, password,))
+                    self.cnx.commit()
+                    solves_query = """INSERT INTO solves (team_name, puzzle_name) SELECT %s, puzzle_name FROM puzzles"""
+                    cursor.execute(solves_query, (team_name,))
+                    self.cnx.commit()
+            
+            except MySQLdb.Error as e:
+                return error_tmpl.render(error="That team name is already taken. Please choose another.")
 
             tmpl = env.get_template('register_success.html')
             return tmpl.render(team_name=team_name)
@@ -164,6 +196,8 @@ class Root(object):
         return tmpl.render()
 
 if __name__ == "__main__":
-    cherrypy.config.update({'server.socket_port': 8000, 'engine.autoreload.on': True }) 
+    if 'prod' in argv:
+        cherrypy.config.update({'server.socket_host': '0.0.0.0'})
+    cherrypy.config.update({'server.socket_port': 5104, 'engine.autoreload.on': True }) 
     root = Root()
     cherrypy.quickstart(root, '/', {'/' : {'tools.staticdir.root': getcwd() + '/'}, '/puzzles': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'puzzles'}, '/static': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'static'}})
