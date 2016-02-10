@@ -1,0 +1,4 @@
+use puzzleserver;
+CREATE TABLE puzzles (puzzle_name VARCHAR(50), answer VARCHAR(50), release_date tinyint, number tinyint);
+CREATE TABLE solves (team_name VARCHAR(50), puzzle_name VARCHAR(50), solved TINYINT DEFAULT 0);
+CREATE TABLE submissions (team_name VARCHAR(50), guess VARCHAR(50), puzzle_name VARCHAR(50), submit_time TIMESTAMP);
