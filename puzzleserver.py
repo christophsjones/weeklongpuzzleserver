@@ -100,7 +100,7 @@ class Root(object):
                         cursor.execute(check_query, (team_name, puzzle_name,))
                         for row in cursor:
                             if row['solved']:
-                                return error_tmpl.render('Answer is correct, but your team already solved this puzzle.')
+                                return error_tmpl.render(error='Answer is correct, but your team already solved this puzzle.')
 
                         solves_query = """UPDATE solves SET solved = 1 WHERE team_name = %s AND puzzle_name = %s"""
                         cursor.execute(solves_query, (team_name, puzzle_name,))
