@@ -129,12 +129,12 @@ class Root(object):
     def teams(self):
         try:
             with closing(self.cnx.cursor()) as cursor:
-                query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, teams.time_last_solve AS time_last_solve FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, time_last_solve"""
+                query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, MAX(solves.solve_time) AS solve_time FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
                 cursor.execute(query)
-                teams = [(row['team_name'], row['total_solves']) for row in cursor]
+                teams = [(row['team_name'], row['total_solves'], row['solve_time']) for row in cursor]
         except MySQLdb.Error as e:
             error_tmpl = env.get_template('error.html')
-            return error_tmpl.render('Could not fetch team names')
+            return error_tmpl.render(error='Could not fetch team names')
 
         tmpl = env.get_template('teams.html')
         return tmpl.render(teams=enumerate(teams))
@@ -143,16 +143,16 @@ class Root(object):
     def puzzles(self):
         try:
             with closing(self.cnx.cursor()) as cursor:
-                query = """SELECT puzzle_name, release_date FROM puzzles"""
+                query = """SELECT puzzles.puzzle_name AS puzzle_name, puzzles.release_date AS release_date, puzzles.number AS number, SUM(solves.solved) AS total_solves FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name GROUP BY solves.puzzle_name ORDER BY release_date, number"""
                 cursor.execute(query)
                 
                 res = cursor.fetchall()
         except MySQLdb.Error as e:
             error_tmpl = env.get_template('error.html')
-            return error_tmpl.render('Could not fetch puzzles')
+            return error_tmpl.render(error='Could not fetch puzzles')
 
         days = set([row['release_date'] for row in res])
-        puzzdays = [(day, [row['puzzle_name'] for row in res if row['release_date'] == day]) for day in days]
+        puzzdays = [(day, [(row['puzzle_name'], row['total_solves']) for row in res if row['release_date'] == day]) for day in days]
         puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
         tmpl = env.get_template('puzzles.html')

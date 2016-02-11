@@ -1,10 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
+    <table>
+        <tbody>
+            <tr>
+                <th>Day</th>
+                <th>Puzzle</th>
+                <th>Solve Count</th>
+            </tr>
     {% for (day, puzzles) in puzzdays %}
-        <div>
-            {{ day }}
-            {% for puzzle in puzzles %}
-            <a href="/puzzles/{{ puzzle }}.pdf">{{ puzzle }}</a>
+        <tr>
+            <td>{{ day }}</td><td></td><td></td>
+        </tr>
+            {% for puzzle, solves in puzzles %}
+            <tr>
+                <td></td><td><a href="/puzzles/{{ puzzle }}.pdf">{{ puzzle }}</a></td><td>{{ solves }}</td></tr>
             {% endfor %}
         </div>
     {% endfor %}

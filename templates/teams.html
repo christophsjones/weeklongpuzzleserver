@@ -7,12 +7,14 @@
                     <th>Rank</th>
                     <th>Team</th>
                     <th>Puzzles Solved</th>
+                    <th>Last Solve Time</th>
                 </tr>
                 {% for team in teams %}
                 <tr>
                     <td>{{1 + team[0]}}</td>
                     <td>{{team[1][0]}}</td>
                     <td>{{team[1][1]}}</td>
+                    <td>{{team[1][2]}}</td>
                 </tr>    
                 {% endfor %}    
             </tbody>
