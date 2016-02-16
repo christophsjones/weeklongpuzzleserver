@@ -6,14 +6,19 @@
                 <th>Day</th>
                 <th>Puzzle</th>
                 <th>Solve Count</th>
+                <th>Picture (will move to top of PDFs)</th>
             </tr>
     {% for (day, puzzles) in puzzdays %}
         <tr>
             <td>{{ day }}</td><td></td><td></td>
         </tr>
-            {% for puzzle, solves in puzzles %}
+            {% for puzzle, pdf, solves in puzzles %}
             <tr>
-                <td></td><td><a href="/puzzles/{{ puzzle }}.pdf">{{ puzzle }}</a></td><td>{{ solves }}</td></tr>
+                <td></td><td><a href="/puzzles/{{ pdf }}.pdf">{{ puzzle }}</a></td><td>{{ solves }}</td><td>
+                    {% if puzzle != "Hello World" %}
+                    <a href="/puzzles/{{ pdf }}.png">pic</a>
+                    {% endif %}
+            </td></tr>
             {% endfor %}
         </div>
     {% endfor %}

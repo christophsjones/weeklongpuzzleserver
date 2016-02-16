@@ -11,16 +11,17 @@ import sys
 
 from mysql_config import mysqldb_config
 
+HUNT_STATUS = 'testing'
+
 def guess_autoescape(template_name):
     return True
 
 templateLoader = FileSystemLoader(searchpath=getcwd() + '/templates')
 env = Environment(autoescape=guess_autoescape, loader=templateLoader)
 
-day_ids = {2: 'Monday', 3: 'Tuesday', 4: 'Wednesday', 5: 'Meta'}
+day_ids = {2: 'Monday', 3: 'Tuesday', 4: 'Wednesday', 5: 'Thursday', 6: 'Meta'}
 
 class Root(object):
-    cnx = MySQLdb.connect(**mysqldb_config) 
 
     def sanitize_unicode(resource):
         error_tmpl = env.get_template('error.html')
@@ -54,18 +55,31 @@ class Root(object):
     @sanitize_unicode
     def solve(self, team_name=None, password=None, puzzle_name=None, guess=None):
         error_tmpl = env.get_template('error.html')
+        if HUNT_STATUS == 'closed':
+            tmpl = env.get_template('solve_closed.html')
+            return tmpl.render()
 
         try:
-            with closing(self.cnx.cursor()) as cursor:
+            with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                cursor = cnx.cursor()
+
                 team_query = """SELECT team_name, password, time_created FROM teams ORDER BY time_created"""
                 cursor.execute(team_query)
                 teams = OrderedDict([(row['team_name'], row) for row in cursor])
+                cursor.close()
                 
-                puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles ORDER BY release_date, number"""
-                cursor.execute(puzz_query)
+                cursor = cnx.cursor()
+                puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles WHERE release_date <= DAYOFWEEK(CURDATE()) ORDER BY release_date, number"""
+                testing_puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles ORDER BY release_date, number"""
+                cursor.execute(testing_puzz_query if HUNT_STATUS == 'testing' else puzz_query)
                 puzzles = OrderedDict([(row['puzzle_name'], row) for row in cursor])
+                cursor.close()
         except MySQLdb.Error as e:
             return error_tmpl.render(error="Could not fetch puzzle list")
+
+        if not puzzles:
+            tmpl = env.get_template('solve_closed.html')
+            return tmpl.render()
 
         if team_name is not None:
             if team_name == "None":
@@ -86,25 +100,31 @@ class Root(object):
             guess = guess.upper()
 
             try:
-                with closing(self.cnx.cursor()) as cursor:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
                     submit_query = """INSERT INTO submissions (team_name, puzzle_name, guess) VALUES (%s, %s, %s)"""
                     cursor.execute(submit_query, (team_name, puzzle_name, guess))
-                    self.cnx.commit()
+                    cnx.commit()
+                    cursor.close()
             except MySQLdb.Error as e:
                 pass # fail to record submissions silently
             
             if guess == puzzles[puzzle_name]['answer']:
                 try:
-                    with closing(self.cnx.cursor()) as cursor: 
+                    with closing(MySQLdb.connect(**mysqldb_config)) as cnx: 
+                        cursor = cnx.cursor()
                         check_query = """SELECT team_name, puzzle_name, solved FROM solves WHERE team_name = %s AND puzzle_name = %s"""
                         cursor.execute(check_query, (team_name, puzzle_name,))
                         for row in cursor:
                             if row['solved']:
                                 return error_tmpl.render(error='Answer is correct, but your team already solved this puzzle.')
+                        cursor.close()
 
+                        cursor = cnx.cursor()
                         solves_query = """UPDATE solves SET solved = 1 WHERE team_name = %s AND puzzle_name = %s"""
                         cursor.execute(solves_query, (team_name, puzzle_name,))
-                        self.cnx.commit()
+                        cnx.commit()
+                        cursor.close()
 
                 except MySQLdb.Error as e:
                     return error_tmpl.render(error='Could not update team solve stats. Please try submitting again.')
@@ -116,10 +136,19 @@ class Root(object):
                     guess=guess, 
                 )
             else:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
+                    response_query = """SELECT puzzle_name, guess, response FROM responses WHERE puzzle_name = %s AND guess = %s"""
+                    cursor.execute(response_query, (puzzle_name, guess))
+
+                    responses = cursor.fetchall()
+                    cursor.close()
+
                 tmpl = env.get_template('incorrect.html')
                 return tmpl.render(
                     puzzle_name=puzzle_name,
-                    guess=guess
+                    guess=guess,
+                    responses=responses,
                 )
         else:
             tmpl = env.get_template('solve.html')
@@ -128,10 +157,12 @@ class Root(object):
     @cherrypy.expose
     def teams(self):
         try:
-            with closing(self.cnx.cursor()) as cursor:
+            with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                cursor = cnx.cursor()
                 query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, MAX(solves.solve_time) AS solve_time FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
                 cursor.execute(query)
                 teams = [(row['team_name'], row['total_solves'], row['solve_time']) for row in cursor]
+                cursor.close()
         except MySQLdb.Error as e:
             error_tmpl = env.get_template('error.html')
             return error_tmpl.render(error='Could not fetch team names')
@@ -142,17 +173,20 @@ class Root(object):
     @cherrypy.expose
     def puzzles(self):
         try:
-            with closing(self.cnx.cursor()) as cursor:
-                query = """SELECT puzzles.puzzle_name AS puzzle_name, puzzles.release_date AS release_date, puzzles.number AS number, SUM(solves.solved) AS total_solves FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name GROUP BY solves.puzzle_name ORDER BY release_date, number"""
-                cursor.execute(query)
+            with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                cursor = cnx.cursor()
+                query = """SELECT puzzles.puzzle_name AS puzzle_name, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number, SUM(solves.solved) AS total_solves FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name WHERE release_date <= DAYOFWEEK(CURDATE()) GROUP BY solves.puzzle_name ORDER BY release_date, number"""
+                testing_query = """SELECT puzzles.puzzle_name AS puzzle_name, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number, SUM(solves.solved) AS total_solves FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name GROUP BY solves.puzzle_name ORDER BY release_date, number"""
+                cursor.execute(testing_query if HUNT_STATUS == 'testing' else query)
                 
                 res = cursor.fetchall()
+                cursor.close()
         except MySQLdb.Error as e:
             error_tmpl = env.get_template('error.html')
             return error_tmpl.render(error='Could not fetch puzzles')
 
         days = set([row['release_date'] for row in res])
-        puzzdays = [(day, [(row['puzzle_name'], row['total_solves']) for row in res if row['release_date'] == day]) for day in days]
+        puzzdays = [(day, [(row['puzzle_name'], row['pdf_name'], row['total_solves']) for row in res if row['release_date'] == day]) for day in days]
         puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
         tmpl = env.get_template('puzzles.html')
@@ -172,13 +206,18 @@ class Root(object):
                 return error_tmpl.render(error='Passwords do not match')
 
             try:
-                with closing(self.cnx.cursor()) as cursor:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
                     register_query = """INSERT INTO teams (team_name, password) VALUES (%s, %s)"""
                     cursor.execute(register_query, (team_name, password,))
-                    self.cnx.commit()
+                    cnx.commit()
+                    cursor.close()
+
+                    cursor = cnx.cursor()
                     solves_query = """INSERT INTO solves (team_name, puzzle_name) SELECT %s, puzzle_name FROM puzzles"""
                     cursor.execute(solves_query, (team_name,))
-                    self.cnx.commit()
+                    cnx.commit()
+                    cursor.close()
             
             except MySQLdb.Error as e:
                 return error_tmpl.render(error="That team name is already taken. Please choose another.")
@@ -197,6 +236,6 @@ class Root(object):
 if __name__ == "__main__":
     if 'prod' in sys.argv:
         cherrypy.config.update({'server.socket_host': '0.0.0.0'})
-    cherrypy.config.update({'server.socket_port': 5104, 'engine.autoreload.on': True }) 
+    cherrypy.config.update({'server.socket_port': 6417, 'engine.autoreload.on': True }) 
     root = Root()
     cherrypy.quickstart(root, '/', {'/' : {'tools.staticdir.root': getcwd() + '/'}, '/puzzles': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'puzzles'}, '/static': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'static'}})
