@@ -12,7 +12,7 @@
                 {% for team in teams %}
                 <tr>
                     <td>{{1 + team[0]}}</td>
-                    <td>{{team[1][0]}}</td>
+                    <td><a href="/teams?team={{team[1][0]}}">{{team[1][0]}}</a></td>
                     <td>{{team[1][1]}}</td>
                     <td>{{team[1][2]}}</td>
                 </tr>    
