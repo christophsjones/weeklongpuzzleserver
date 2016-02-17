@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
-        <p>Register a new team here.</p>
+<p>Register a new team here.</p>
         <form id="register" action method="post">
-            <div>
-                Team Name
-                <input type='text' name='team_name' maxlength='50'>
+            <div class="row">
+                    <div class="three columns">Team Name</div>
+                    <div class="three columns">
+                        <input type='text' name='team_name' maxlength='50'>
+                    </div>
             </div>
-            <div>
-                Team Password
-                <input type='password' name='password' maxlength='50'>
+            <div class="row">
+                    <div class="three columns">Team Password</div>
+                    <div class="three columns">
+                        <input type='password' name='password' maxlength='50'></br>
+                    </div>
             </div>
-            <div>
-                Retype Password
-                <input type='password' name='password2' maxlength='50'>
+            <div class="row">
+                    <div class="three columns">Retype Password</div>
+                    <div class="three columns">
+                        <input type='password' name='password2' maxlength='50'></br>
+                    </div>
             </div>
-            <input type="submit" value="Submit">
+            <input class="submit-button" type="submit" value="Submit">
         </form>
         {% endblock %}
