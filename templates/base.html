@@ -2,19 +2,32 @@
 
 <html>
     <head>
+        <meta charset="utf-8">
         <title>SCS Day 2016 Puzzlehunt</title>
-        <link rel="icon" href="/static/favicon.ico">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" href="/static/images/favicon.ico">
+        <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="../static/Skeleton-2.0.4/css/normalize.css">
+        <link rel="stylesheet" href="../static/Skeleton-2.0.4/css/skeleton.css">
+        <link rel="stylesheet" href="../static/css/base.css">
     </head>
     <body>
-        <div>
+        <div class="banner">
+            <h1>SCS Day PuzzleHunt 2016</h1>
+        </div>
+
+        <div class="nav-container">
+            <nav>
             <a href='/home'>Home</a>
             <a href='/register'>Register</a>
             <a href='/puzzles'>Puzzles</a>
             <a href='/solve'>Solve!</a>
             <a href='/teams'>Leaderboard</a>
             <a href='/whatis'>Puzzlehunt Guide</a>
+            </nav>
         </div>
-
-        {% block content %}{% endblock %}
+        <div class="center">
+            {% block content %}{% endblock %}
+        </div>
     </body>
 </html>

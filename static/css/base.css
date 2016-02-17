@@ -1,0 +1,56 @@
+body {
+  font-family:Courier New, serif !important;
+  color: white;
+  background: black;
+}
+
+input[type="text"], input[type="password"], select {
+  background: transparent;
+  background-color: black;
+  border-style: solid;
+  border-bottom-width: 1px;
+}
+
+input[type="submit"] {
+  outline-width: 2px;
+  font-weight: bold;
+  color: white;
+  padding-right: 20px;
+  padding-left: 20px;
+}
+
+.banner {
+  margin: auto;
+  margin-top: 8%;
+  width: 80%;
+}
+
+nav a {
+  font-size: 110%;
+  color: white;
+  text-decoration: none;
+  padding-right: 3%;
+  padding-left: 3%;
+}
+
+nav a:hover {
+  font-weight: bold;
+  color: white;
+}
+
+.nav-container {
+  margin: auto;
+  width: 80%;
+  padding: 5px; 
+  text-align: center;
+  border-bottom: solid;
+  border-top: solid;
+  border-color: white;
+  border-width: 2px;
+}
+
+.center {
+  margin: auto;
+  margin-top: 3%;
+  width: 80%;
+}
