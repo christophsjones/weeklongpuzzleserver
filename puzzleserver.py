@@ -19,7 +19,7 @@ def guess_autoescape(template_name):
 templateLoader = FileSystemLoader(searchpath=getcwd() + '/templates')
 env = Environment(autoescape=guess_autoescape, loader=templateLoader)
 
-day_ids = {2: 'Monday', 3: 'Tuesday', 4: 'Wednesday', 5: 'Thursday', 6: 'Meta'}
+day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Meta'}
 
 class Root(object):
 
