@@ -1,4 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
         <p>Your submission of {{ guess }} for the puzzle {{ puzzle_name }} was incorrect.</p>
+
+        {% if responses %}
+        <p> You received a response for your submission: </p>
+        {% for response in responses %}
+        <p>{{ response['response'] }}</p> 
+        {% endfor %}
+        {% endif %}
 {% endblock %}
