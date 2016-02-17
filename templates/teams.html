@@ -9,12 +9,12 @@
                     <th>Puzzles Solved</th>
                     <th>Last Solve Time</th>
                 </tr>
-                {% for team in teams %}
+                {% for rank, team in teams %}
                 <tr>
-                    <td>{{1 + team[0]}}</td>
-                    <td><a href="/teams?team={{team[1][0]}}">{{team[1][0]}}</a></td>
-                    <td>{{team[1][1]}}</td>
-                    <td>{{team[1][2]}}</td>
+                    <td>{{ 1 + rank }}</td>
+                    <td><a href="/teams?team={{ team['team_name'] }}">{{ team['team_name'] }}</a></td>
+                    <td>{{ team['total_solves'] }}</td>
+                    <td>{{ team['solve_time'] }}</td>
                 </tr>    
                 {% endfor %}    
             </tbody>

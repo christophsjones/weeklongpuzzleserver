@@ -16,12 +16,7 @@
             </div>
             <div>
                 Team
-                <select name="team_name">
-                    <option value="None" selected></option>
-                    {% for team in teams %}
-                    <option value="{{team}}">{{team}}</option>
-                    {% endfor %}
-                </select>
+                <input type="text" name="team_name" maxlength="50">
             </div>
             <div>
                 Team Password

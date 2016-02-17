@@ -11,7 +11,8 @@ import sys
 
 from mysql_config import mysqldb_config
 
-HUNT_STATUS = 'testing'
+HUNT_STATUS = 'open'
+DATE_OFFSET = '2016-02-14 12:00:00'
 
 def guess_autoescape(template_name):
     return True
@@ -20,6 +21,15 @@ templateLoader = FileSystemLoader(searchpath=getcwd() + '/templates')
 env = Environment(autoescape=guess_autoescape, loader=templateLoader)
 
 day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Meta'}
+
+def standardize_guess(guess):
+    alpha_guess = ''.join(e for e in guess if e.isalnum())
+    return alpha_guess.upper()
+
+def handle_error(*args, **kwargs):
+    cherrypy.response.status = 404
+    error_tmpl = env.get_template('error.html')
+    return error_tmpl.render(error='Page not found')
 
 class Root(object):
 
@@ -54,11 +64,11 @@ class Root(object):
     @cherrypy.expose
     @sanitize_unicode
     def solve(self, team_name=None, password=None, puzzle_name=None, guess=None):
-        error_tmpl = env.get_template('error.html')
         if HUNT_STATUS == 'closed':
-            tmpl = env.get_template('solve_closed.html')
-            return tmpl.render()
+            closed_tmpl = env.get_template('hunt_closed.html')
+            return closed_tmpl.render()
 
+        error_tmpl = env.get_template('error.html')
         try:
             with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                 cursor = cnx.cursor()
@@ -69,8 +79,13 @@ class Root(object):
                 cursor.close()
                 
                 cursor = cnx.cursor()
-                puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles WHERE release_date <= DAYOFWEEK(CURDATE()) ORDER BY release_date, number"""
-                testing_puzz_query = """SELECT puzzle_name, answer, release_date, number FROM puzzles ORDER BY release_date, number"""
+                puzz_query = """SELECT 
+                    puzzle_name, answer, release_date, number 
+                    FROM puzzles WHERE TIMESTAMPDIFF(DAY, '{date}', NOW()) >= release_date 
+                    ORDER BY release_date, number""".format(date=DATE_OFFSET)
+                testing_puzz_query = """SELECT 
+                    puzzle_name, answer, release_date, number 
+                    FROM puzzles ORDER BY release_date, number"""
                 cursor.execute(testing_puzz_query if HUNT_STATUS == 'testing' else puzz_query)
                 puzzles = OrderedDict([(row['puzzle_name'], row) for row in cursor])
                 cursor.close()
@@ -78,12 +93,10 @@ class Root(object):
             return error_tmpl.render(error="Could not fetch puzzle list")
 
         if not puzzles:
-            tmpl = env.get_template('solve_closed.html')
+            tmpl = env.get_template('hunt_soon.html')
             return tmpl.render()
 
         if team_name is not None:
-            if team_name == "None":
-                return error_tmpl.render(error='Gotta pick a team')
             if puzzle_name == "None":
                 return error_tmpl.render(error='Gotta pick a puzzle')
 
@@ -97,7 +110,7 @@ class Root(object):
             if not isinstance(guess, str) and not isinstance(guess, unicode):
                 return error_tmpl.render(error='Invalid guess')
 
-            guess = guess.upper()
+            guess = standardize_guess(guess)
 
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
@@ -113,7 +126,8 @@ class Root(object):
                 try:
                     with closing(MySQLdb.connect(**mysqldb_config)) as cnx: 
                         cursor = cnx.cursor()
-                        check_query = """SELECT team_name, puzzle_name, solved FROM solves WHERE team_name = %s AND puzzle_name = %s"""
+                        check_query = """SELECT team_name, puzzle_name, solved 
+                            FROM solves WHERE team_name = %s AND puzzle_name = %s"""
                         cursor.execute(check_query, (team_name, puzzle_name,))
                         for row in cursor:
                             if row['solved']:
@@ -138,7 +152,8 @@ class Root(object):
             else:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
-                    response_query = """SELECT puzzle_name, guess, response FROM responses WHERE puzzle_name = %s AND guess = %s"""
+                    response_query = """SELECT puzzle_name, guess, response 
+                        FROM responses WHERE puzzle_name = %s AND guess = %s"""
                     cursor.execute(response_query, (puzzle_name, guess))
 
                     responses = cursor.fetchall()
@@ -152,7 +167,7 @@ class Root(object):
                 )
         else:
             tmpl = env.get_template('solve.html')
-            return tmpl.render(puzzles=puzzles.keys(), teams=teams.keys())
+            return tmpl.render(puzzles=puzzles.keys())
 
     @cherrypy.expose
     @sanitize_unicode
@@ -161,8 +176,25 @@ class Root(object):
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
-                    solves_query = """SELECT solves.team_name AS team_name, puzzles.puzzle_name AS puzzle_name, IF(solves.solved = 1, solves.solve_time, "") AS solve_time, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name WHERE team_name = %s AND release_date <= DAYOFWEEK(CURDATE()) ORDER BY release_date, number"""
-                    testing_solves_query = """SELECT solves.team_name AS team_name, puzzles.puzzle_name AS puzzle_name, IF(solves.solved = 1, solves.solve_time, "") AS solve_time, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name WHERE team_name = %s ORDER BY release_date, number"""
+                    solves_query = """SELECT 
+                        solves.team_name AS team_name, 
+                        puzzles.puzzle_name AS puzzle_name, 
+                        IF(solves.solved = 1, solves.solve_time, "") AS solve_time, 
+                        puzzles.pdf_name AS pdf_name, 
+                        puzzles.release_date AS release_date, 
+                        puzzles.number AS number
+                        FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name 
+                        WHERE team_name = %s AND TIMESTAMPDIFF(DAY, '{date}', NOW()) >= release_date 
+                        ORDER BY release_date, number""".format(date=DATE_OFFSET)
+                    testing_solves_query = """SELECT 
+                        solves.team_name AS team_name, 
+                        puzzles.puzzle_name AS puzzle_name, 
+                        IF(solves.solved = 1, solves.solve_time, "") AS solve_time, 
+                        puzzles.pdf_name AS pdf_name, 
+                        puzzles.release_date AS release_date, 
+                        puzzles.number AS number 
+                        FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name 
+                        WHERE team_name = %s ORDER BY release_date, number"""
 
                     cursor.execute(testing_solves_query if HUNT_STATUS == 'testing' else solves_query, (team,))
                     solves = cursor.fetchall()
@@ -172,7 +204,7 @@ class Root(object):
                 return error_tmpl.render(error='Could not fetch team information for team ' + team)
 
             days = set([row['release_date'] for row in solves])
-            puzzdays = [(day, [(row['puzzle_name'], row['pdf_name'], row['solve_time']) for row in solves if row['release_date'] == day]) for day in days]
+            puzzdays = [(day, [row for row in solves if row['release_date'] == day]) for day in days]
             puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('team.html')
@@ -181,9 +213,14 @@ class Root(object):
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
-                    query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, MAX(solves.solve_time) AS solve_time FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
+                    query = """SELECT 
+                        teams.team_name AS team_name, 
+                        SUM(solves.solved) AS total_solves, 
+                        MAX(solves.solve_time) AS solve_time 
+                        FROM teams JOIN solves ON teams.team_name = solves.team_name 
+                        GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
                     cursor.execute(query)
-                    teams = [(row['team_name'], row['total_solves'], row['solve_time']) for row in cursor]
+                    teams = [row for row in cursor]
                     cursor.close()
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
@@ -193,30 +230,95 @@ class Root(object):
             return tmpl.render(teams=enumerate(teams))
 
     @cherrypy.expose
-    def puzzles(self):
-        try:
-            with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
-                cursor = cnx.cursor()
-                query = """SELECT puzzles.puzzle_name AS puzzle_name, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number, SUM(solves.solved) AS total_solves FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name WHERE release_date <= DAYOFWEEK(CURDATE()) GROUP BY solves.puzzle_name ORDER BY release_date, number"""
-                testing_query = """SELECT puzzles.puzzle_name AS puzzle_name, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number, SUM(solves.solved) AS total_solves FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name GROUP BY solves.puzzle_name ORDER BY release_date, number"""
-                cursor.execute(testing_query if HUNT_STATUS == 'testing' else query)
-                
-                res = cursor.fetchall()
-                cursor.close()
-        except MySQLdb.Error as e:
+    def puzzles(self, *args):
+        if len(args) != 0:
             error_tmpl = env.get_template('error.html')
-            return error_tmpl.render(error='Could not fetch puzzles')
+            if len(args) != 2 or args[0] != 'hint':
+                return error_tmpl.render(error="Page not found ")
+            else:
+                pname = args[1]
+                try:
+                    with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                        cursor = cnx.cursor()
+                        hint_query = """SELECT puzzle_name, pdf_name, hint FROM puzzles WHERE pdf_name = %s
+                            AND TIMESTAMPDIFF(DAY, '{date}', NOW()) > release_date""".format(date=DATE_OFFSET)
+                        cursor.execute(hint_query, (pname,))
+                        
+                        res = cursor.fetchone()
+                        cursor.close()
+                except MySQLdb.Error as e:
+                    return error_tmpl.render(error="Could not fetch hint for puzzle " + pname)
+                if res is None:
+                    return error_tmpl.render(error="Page not found")
+                else:
+                    tmpl = env.get_template('hint.html')
+                    return tmpl.render(puzzle_name=res['puzzle_name'], hint=res['hint'])
+            
+        if HUNT_STATUS == "closed" or HUNT_STATUS == "testing":
+            try:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
+                    testing_query = """SELECT 
+                        puzzles.puzzle_name AS puzzle_name, 
+                        puzzles.pdf_name AS pdf_name, 
+                        puzzles.release_date AS release_date, 
+                        puzzles.number AS number, 
+                        SUM(solves.solved) AS total_solves
+                        FROM puzzles JOIN solves on puzzles.puzzle_name = solves.puzzle_name 
+                        GROUP BY solves.puzzle_name ORDER BY release_date, number"""
+                    cursor.execute(testing_query)
+                    
+                    res = cursor.fetchall()
+                    cursor.close()
+            except MySQLdb.Error as e:
+                error_tmpl = env.get_template('error.html')
+                return error_tmpl.render(error='Could not fetch puzzles')
 
-        days = set([row['release_date'] for row in res])
-        puzzdays = [(day, [(row['puzzle_name'], row['pdf_name'], row['total_solves']) for row in res if row['release_date'] == day]) for day in days]
-        puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
+            days = set([row['release_date'] for row in res])
+            puzzdays = [(day, [row for row in res if row['release_date'] == day]) for day in days]
+            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
-        tmpl = env.get_template('puzzles.html')
-        return tmpl.render(puzzdays=puzzdays)
+            tmpl = env.get_template('solution_puzzles.html')
+            return tmpl.render(puzzdays=puzzdays)
+
+        else:
+            try:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
+                    query = """SELECT 
+                        puzzles.puzzle_name AS puzzle_name, 
+                        puzzles.pdf_name AS pdf_name, 
+                        puzzles.release_date AS release_date, 
+                        puzzles.number AS number, 
+                        SUM(solves.solved) AS total_solves,
+                        TIMESTAMPDIFF(DAY, '{date}', NOW()) > release_date AS hint_avail
+                        FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name 
+                        WHERE TIMESTAMPDIFF(DAY, '{date}', NOW()) - release_date >= 0
+                        GROUP BY solves.puzzle_name ORDER BY release_date, number""".format(date=DATE_OFFSET)
+                    cursor.execute(query)
+                    res = cursor.fetchall()
+                    cursor.close()
+            except MySQLdb.Error as e:
+                error_tmpl = env.get_template('error.html')
+                return error_tmpl.render(error='Could not fetch puzzles')
+            if not res:
+                soon_tmpl = env.get_template("hunt_soon.html")
+                return soon_tmpl.render()
+
+            days = set([row['release_date'] for row in res])
+            puzzdays = [(day, [row for row in res if row['release_date'] == day]) for day in days]
+            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
+
+            tmpl = env.get_template('puzzles.html')
+            return tmpl.render(puzzdays=puzzdays)
 
     @cherrypy.expose
     @sanitize_unicode
-    def register(self, team_name=None, password=None, password2=None):
+    def register(self, team_name=None, password=None, password2=None, email=None, name=None):
+        if HUNT_STATUS == 'closed':
+            closed_tmpl = env.get_template('hunt_closed.html')
+            return closed_tmpl.render()
+
         if team_name is not None:
             error_tmpl = env.get_template('error.html')
 
@@ -230,8 +332,8 @@ class Root(object):
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
-                    register_query = """INSERT INTO teams (team_name, password) VALUES (%s, %s)"""
-                    cursor.execute(register_query, (team_name, password,))
+                    register_query = """INSERT INTO teams (team_name, password, contact_email, contact_name) VALUES (%s, %s, %s, %s)"""
+                    cursor.execute(register_query, (team_name, password, email, name))
                     cnx.commit()
                     cursor.close()
 
@@ -258,6 +360,6 @@ class Root(object):
 if __name__ == "__main__":
     if 'prod' in sys.argv:
         cherrypy.config.update({'server.socket_host': '0.0.0.0'})
-    cherrypy.config.update({'server.socket_port': 6417, 'engine.autoreload.on': True }) 
+    cherrypy.config.update({'server.socket_port': 6417, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
     root = Root()
     cherrypy.quickstart(root, '/', {'/' : {'tools.staticdir.root': getcwd() + '/'}, '/puzzles': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'puzzles'}, '/static': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'static'}})
