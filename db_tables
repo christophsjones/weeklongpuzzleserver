@@ -1,7 +1,6 @@
 USE puzzleserver;
 CREATE TABLE IF NOT EXISTS teams (team_name VARCHAR(50), password VARCHAR(50), time_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (team_name));
-CREATE TABLE IF NOT EXISTS puzzles (puzzle_name VARCHAR(50), pdf_name VARCHAR(50), answer VARCHAR(50), release_date TINYINT, number TINYINT, PRIMARY KEY (puzzle_name));
+CREATE TABLE IF NOT EXISTS puzzles (puzzle_name VARCHAR(50), pdf_name VARCHAR(50), answer VARCHAR(50), release_date TINYINT, number TINYINT, hint VARCHAR(200), PRIMARY KEY (puzzle_name));
 CREATE TABLE IF NOT EXISTS solves (team_name VARCHAR(50), puzzle_name VARCHAR(50), solved TINYINT DEFAULT 0, solve_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS submissions (team_name VARCHAR(50), guess VARCHAR(50), puzzle_name VARCHAR(50), submit_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS responses (puzzle_name VARCHAR(50), guess VARCHAR(50), response VARCHAR(200));
-CREATE TABLE IF NOT EXISTS hints (puzzle_name VARCHAR(50), hint VARCHAR(200), number TINYINT);
