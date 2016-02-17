@@ -155,20 +155,42 @@ class Root(object):
             return tmpl.render(puzzles=puzzles.keys(), teams=teams.keys())
 
     @cherrypy.expose
-    def teams(self):
-        try:
-            with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
-                cursor = cnx.cursor()
-                query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, MAX(solves.solve_time) AS solve_time FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
-                cursor.execute(query)
-                teams = [(row['team_name'], row['total_solves'], row['solve_time']) for row in cursor]
-                cursor.close()
-        except MySQLdb.Error as e:
-            error_tmpl = env.get_template('error.html')
-            return error_tmpl.render(error='Could not fetch team names')
+    @sanitize_unicode
+    def teams(self, team=None):
+        if team is not None:
+            try:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
+                    solves_query = """SELECT solves.team_name AS team_name, puzzles.puzzle_name AS puzzle_name, IF(solves.solved = 1, solves.solve_time, "") AS solve_time, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name WHERE team_name = %s AND release_date <= DAYOFWEEK(CURDATE()) ORDER BY release_date, number"""
+                    testing_solves_query = """SELECT solves.team_name AS team_name, puzzles.puzzle_name AS puzzle_name, IF(solves.solved = 1, solves.solve_time, "") AS solve_time, puzzles.pdf_name AS pdf_name, puzzles.release_date AS release_date, puzzles.number AS number FROM puzzles JOIN solves ON puzzles.puzzle_name = solves.puzzle_name WHERE team_name = %s ORDER BY release_date, number"""
 
-        tmpl = env.get_template('teams.html')
-        return tmpl.render(teams=enumerate(teams))
+                    cursor.execute(testing_solves_query if HUNT_STATUS == 'testing' else solves_query, (team,))
+                    solves = cursor.fetchall()
+                    cursor.close()
+            except MySQLdb.Error as e:
+                error_tmpl = env.get_template('error.html')
+                return error_tmpl.render(error='Could not fetch team information for team ' + team)
+
+            days = set([row['release_date'] for row in solves])
+            puzzdays = [(day, [(row['puzzle_name'], row['pdf_name'], row['solve_time']) for row in solves if row['release_date'] == day]) for day in days]
+            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
+
+            tmpl = env.get_template('team.html')
+            return tmpl.render(team=team, puzzdays=puzzdays)
+        else:
+            try:
+                with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
+                    cursor = cnx.cursor()
+                    query = """SELECT teams.team_name AS team_name, SUM(solves.solved) AS total_solves, MAX(solves.solve_time) AS solve_time FROM teams JOIN solves ON teams.team_name = solves.team_name GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
+                    cursor.execute(query)
+                    teams = [(row['team_name'], row['total_solves'], row['solve_time']) for row in cursor]
+                    cursor.close()
+            except MySQLdb.Error as e:
+                error_tmpl = env.get_template('error.html')
+                return error_tmpl.render(error='Could not fetch team names')
+
+            tmpl = env.get_template('teams.html')
+            return tmpl.render(teams=enumerate(teams))
 
     @cherrypy.expose
     def puzzles(self):
