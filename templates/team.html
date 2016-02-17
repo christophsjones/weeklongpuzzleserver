@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+    <p>{{ team }}</p>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Day</th>
+                <th>Puzzle</th>
+                <th>Solve Time</th>
+            </tr>
+    {% for (day, puzzles) in puzzdays %}
+        <tr>
+            <td>{{ day }}</td><td></td><td></td>
+        </tr>
+            {% for puzzle, pdf, solve_time in puzzles %}
+            <tr>
+                <td></td><td>{{ puzzle }}</td><td>{{ solve_time }}</td>
+            </tr>
+            {% endfor %}
+        </div>
+    {% endfor %}
+{% endblock %}
