@@ -12,7 +12,7 @@ import sys
 from mysql_config import mysqldb_config
 
 HUNT_STATUS = 'open'
-DATE_OFFSET = '2016-02-14 12:00:00'
+DATE_OFFSET = '2016-02-21 12:00:00'
 
 def guess_autoescape(template_name):
     return True
@@ -202,6 +202,9 @@ class Root(object):
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch team information for team ' + team)
+            if not solves:
+                soon_tmpl = env.get_template("team_soon.html")
+                return soon_tmpl.render(team=team)
 
             days = set([row['release_date'] for row in solves])
             puzzdays = [(day, [row for row in solves if row['release_date'] == day]) for day in days]
@@ -360,6 +363,6 @@ class Root(object):
 if __name__ == "__main__":
     if 'prod' in sys.argv:
         cherrypy.config.update({'server.socket_host': '0.0.0.0'})
-    cherrypy.config.update({'server.socket_port': 6417, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
+    cherrypy.config.update({'server.socket_port': 80, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
     root = Root()
     cherrypy.quickstart(root, '/', {'/' : {'tools.staticdir.root': getcwd() + '/'}, '/puzzles': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'puzzles'}, '/static': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'static'}})
