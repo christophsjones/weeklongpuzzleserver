@@ -179,7 +179,7 @@ class Root(object):
                     solves_query = """SELECT 
                         solves.team_name AS team_name, 
                         puzzles.puzzle_name AS puzzle_name, 
-                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%W %b %e %H:%i:%S"), "") AS solve_time, 
+                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%%W %%b %%e %%H:%%i:%%S"), "") AS solve_time, 
                         puzzles.pdf_name AS pdf_name, 
                         puzzles.release_date AS release_date, 
                         puzzles.number AS number
