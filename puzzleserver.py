@@ -179,7 +179,7 @@ class Root(object):
                     solves_query = """SELECT 
                         solves.team_name AS team_name, 
                         puzzles.puzzle_name AS puzzle_name, 
-                        IF(solves.solved = 1, solves.solve_time, "") AS solve_time, 
+                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%W %b %e %H:%i:%S"), "") AS solve_time, 
                         puzzles.pdf_name AS pdf_name, 
                         puzzles.release_date AS release_date, 
                         puzzles.number AS number
@@ -189,7 +189,7 @@ class Root(object):
                     testing_solves_query = """SELECT 
                         solves.team_name AS team_name, 
                         puzzles.puzzle_name AS puzzle_name, 
-                        IF(solves.solved = 1, solves.solve_time, "") AS solve_time, 
+                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%W %b %e %H:%i:%S"), "") AS solve_time, 
                         puzzles.pdf_name AS pdf_name, 
                         puzzles.release_date AS release_date, 
                         puzzles.number AS number 
@@ -219,7 +219,7 @@ class Root(object):
                     query = """SELECT 
                         teams.team_name AS team_name, 
                         SUM(solves.solved) AS total_solves, 
-                        MAX(solves.solve_time) AS solve_time 
+                        DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time 
                         FROM teams JOIN solves ON teams.team_name = solves.team_name 
                         GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
                     cursor.execute(query)
@@ -362,8 +362,8 @@ class Root(object):
 
 if __name__ == "__main__":
     if 'prod' in sys.argv:
-        cherrypy.config.update({'server.socket_host': '0.0.0.0'})
-    cherrypy.config.update({'server.socket_port': 80, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
+        cherrypy.config.update({'server.socket_host': '0.0.0.0', 'server.socket_port': 80})
+    cherrypy.config.update({'server.socket_port': 8090, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
     root = Root()
     cherrypy.quickstart(root, '/', 
             {'/' : {'tools.staticdir.root': getcwd() + '/'}, 
