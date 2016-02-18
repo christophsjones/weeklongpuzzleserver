@@ -16,22 +16,16 @@
                     <div class="three columns">Guess</div>
                     <div class="three columns">
                 <input type="text" name="guess" maxlength="50">
-                    </div>
-            </div>    
-            <div class="row">
-                    <div class="three columns">Team</div>
+            </div>
+            <div>
+                <div class="three columns">Team</div>
                     <div class="three columns">
-                <select name="team_name">
-                    <option value="None" selected></option>
-                    {% for team in teams %}
-                    <option value="{{team}}">{{team}}</option>
-                    {% endfor %}
-                </select>
+                            <input type="text" name="team_name" maxlength="50">
                     </div>
-            </div>    
-            <div class="row">
-                    <div class="three columns">Team Password</div>
-                    <div class="three columns">
+            </div>
+            <div>
+                <div class="three columns">Team Password</div>
+                <div class="three columns">
                 <input type="password" name="password" maxlength="50">
                     </div>
             </div>    

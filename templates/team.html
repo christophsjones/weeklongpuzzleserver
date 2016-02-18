@@ -13,9 +13,11 @@
         <tr>
             <td>{{ day }}</td><td></td><td></td>
         </tr>
-            {% for puzzle, pdf, solve_time in puzzles %}
+            {% for puzzle in puzzles %}
             <tr>
-                <td></td><td>{{ puzzle }}</td><td>{{ solve_time }}</td>
+                <td></td>
+                <td>{{ puzzle['puzzle_name'] }}</td>
+                <td>{{ puzzle['solve_time'] }}</td>
             </tr>
             {% endfor %}
         </div>
