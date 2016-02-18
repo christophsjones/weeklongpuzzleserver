@@ -363,7 +363,9 @@ class Root(object):
 if __name__ == "__main__":
     if 'prod' in sys.argv:
         cherrypy.config.update({'server.socket_host': '0.0.0.0', 'server.socket_port': 80})
-    cherrypy.config.update({'server.socket_port': 8090, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
+    else:
+        cherrypy.config.update({'server.socket_port': 8090})
+    cherrypy.config.update({'engine.autoreload.on': True, 'error_page.default': handle_error}) 
     root = Root()
     cherrypy.quickstart(root, '/', 
             {'/' : {'tools.staticdir.root': getcwd() + '/'}, 
