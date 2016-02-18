@@ -16,16 +16,15 @@
             <tr>
                 <td></td>
                 <td><a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
-                    {% if puzzle['hint_avail'] %}
                     <a href="/puzzles/hint/{{ puzzle['pdf_name'] }}">(hint)</a>
-                    {% endif %}</td>
+                    <a href="/puzzles/{{ puzzle['pdf_name'] }}_sol.pdf">(solution)</a>
+                </td>
                 <td>{{ puzzle['total_solves'] }}</td>
                 <td>
                     {% if puzzle['puzzle_name'] != "Hello World" %}
                     <a href="/puzzles/{{ puzzle['pdf_name'] }}.png">pic</a>
                     {% endif %}
                 </td>
-            </tr>
             {% endfor %}
         </div>
     {% endfor %}
