@@ -365,4 +365,8 @@ if __name__ == "__main__":
         cherrypy.config.update({'server.socket_host': '0.0.0.0'})
     cherrypy.config.update({'server.socket_port': 80, 'engine.autoreload.on': True, 'error_page.default': handle_error}) 
     root = Root()
-    cherrypy.quickstart(root, '/', {'/' : {'tools.staticdir.root': getcwd() + '/'}, '/puzzles': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'puzzles'}, '/static': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'static'}})
+    cherrypy.quickstart(root, '/', 
+            {'/' : {'tools.staticdir.root': getcwd() + '/'}, 
+             '/puzzles': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'puzzles'}, 
+             '/static': {'tools.staticdir.on': True, 'tools.staticdir.dir': 'static'}, 
+             '/favicon.ico': {'tools.staticfile.on': True, 'tools.staticfile.filename': '/favicon.ico'}})
