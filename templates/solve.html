@@ -2,31 +2,39 @@
 {% block content %}
 <p> Submit an answer! </p>
         <form id="solve" action method="post">
-            <div>
-                Puzzle
+            <div class="row">
+                    <div class="three columns">Puzzle</div>
+                    <div class="three columns">
                 <select name="puzzle_name">
                     {% for puzz in puzzles %}
                     <option value="{{puzz}}">{{puzz}}</option>
                     {% endfor %}
                 </select>
+                    </div>
             </div>    
-            <div>
-                Guess
+            <div class="row">
+                    <div class="three columns">Guess</div>
+                    <div class="three columns">
                 <input type="text" name="guess" maxlength="50">
-            </div>
-            <div>
-                Team
+                    </div>
+            </div>    
+            <div class="row">
+                    <div class="three columns">Team</div>
+                    <div class="three columns">
                 <select name="team_name">
                     <option value="None" selected></option>
                     {% for team in teams %}
                     <option value="{{team}}">{{team}}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div>
-                Team Password
-                <input type="password" name="password" maxlength="50">
+                    </div>
             </div>    
-            <input type="submit" value="Submit!">
+            <div class="row">
+                    <div class="three columns">Team Password</div>
+                    <div class="three columns">
+                <input type="password" name="password" maxlength="50">
+                    </div>
+            </div>    
+            <input class="submit-button" type="submit" value="Submit">
         </form>
         {% endblock %}
