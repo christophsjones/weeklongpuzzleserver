@@ -219,9 +219,10 @@ class Root(object):
                     query = """SELECT 
                         teams.team_name AS team_name, 
                         SUM(solves.solved) AS total_solves, 
-                        DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time 
+                        DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time,
+                        MAX(solves.solve_time) AS solve_timestamp
                         FROM teams JOIN solves ON teams.team_name = solves.team_name 
-                        GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
+                        GROUP BY teams.team_name ORDER BY total_solves DESC, solve_timestamp"""
                     cursor.execute(query)
                     teams = [row for row in cursor]
                     cursor.close()
