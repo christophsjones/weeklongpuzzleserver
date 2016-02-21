@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+    <table style="table-layout: fixed">
+        <col style="width: 10ch">
+        <col style="width: 40ch">
+        <col style="width: 5ch">
+        <col style="width: 80ch">
+        <tbody>
+            <tr>
+                <th>Day</th>
+                <th>Puzzle</th>
+                <th>Solve Count</th>
+                <th>Story</th>
+            </tr>
+    {% for (day, puzzles, plot) in puzzdays %}
+        <tr>
+            <td>{{ day }}</td><td></td><td></td>
+            <td rowspan="{{ puzzles|length + 1}}">
+                <div class="row">
+                    <div class="three columns">
+                        <img src="/puzzles/{{ day }}1.png" style="width:80px;height:80px;">
+                        <img src="/puzzles/{{ day }}2.png" style="width:80px;height:80px;">
+                    </div>
+
+                    <div class="nine columns"><p style="font-size: 80%">{{ plot }}</p></div>
+                </div>
+            </td>
+        </tr>
+            {% for puzzle in puzzles %}
+            <tr>
+                <td></td>
+                <td><a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
+                    {% block hints scoped %}{% endblock %}
+                </td>
+                <td>{{ puzzle['total_solves'] }}</td>
+            </tr>
+            {% endfor %}
+    {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
