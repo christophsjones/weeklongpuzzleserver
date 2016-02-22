@@ -1,28 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-    <p>{{ team }}</p>
-
-    <table style="table-layout: fixed">
-        <col style="width: 10ch">
-        <col style="width: 30ch">
-        <col style="width: 30ch">
-        <tbody>
-            <tr>
-                <th>Day</th>
-                <th>Puzzle</th>
-                <th>Solve Time</th>
-            </tr>
+<h4 align="center">{{ team }}</h4>
     {% for (day, puzzles) in puzzdays %}
-        <tr>
-            <td>{{ day }}</td><td></td><td></td>
-        </tr>
+        {% if loop.index != 1 %}<hr>{% endif %}
+        <h5> > {{ day }}</h5>
             {% for puzzle in puzzles %}
-            <tr>
-                <td></td>
-                <td>{{ puzzle['puzzle_name'] }}</td>
-                <td>{{ puzzle['solve_time'] }}</td>
-            </tr>
+            <div class="row">
+                <div class="four columns">
+                    <p class="p-puzzle">{{ puzzle['puzzle_name'] }}</p>
+                </div>
+                <div class="five columns">
+                    <p class="p-puzzle">Solve Time: {{ puzzle['solve_time'] }}</p>
+                </div>
+            </div>
             {% endfor %}
-        </div>
     {% endfor %}
 {% endblock %}
