@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
     {% for (day, puzzles) in puzzdays %}
-        {% if loop.index != 1 %}<hr>{% endif %}
+        {% if loop.index != 2 %}<hr>{% endif %}
         <h5> > {{ day }}</h5>
         <p class="p-puzzle"><a href="/puzzles/{{ day }}_plot.pdf">Derpy Hunt: Day {{ loop.index }}</a></p>
             {% for puzzle in puzzles %}
