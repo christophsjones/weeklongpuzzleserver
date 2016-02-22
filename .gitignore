@@ -1,3 +1,5 @@
 /puzzles
 /puzzleshidden
 *.pyc
+.gitignore
+puzzleserver.py

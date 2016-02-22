@@ -21,7 +21,7 @@ input[type="submit"] {
 
 .banner {
   margin: auto;
-  margin-top: 8%;
+  margin-top: 7%;
   width: 80%;
 }
 
@@ -53,4 +53,9 @@ nav a:hover {
   margin: auto;
   margin-top: 3%;
   width: 80%;
+}
+
+#derpy {
+  width: 100px;
+  vertical-align: middle;
 }
