@@ -2,7 +2,7 @@
 {% block content %}
     <table style="table-layout: fixed">
         <col style="width: 10ch">
-        <col style="width: 40ch">
+        <col style="width: 110ch">
         <col style="width: 5ch">
         <col style="width: 80ch">
         <tbody>
@@ -10,20 +10,13 @@
                 <th>Day</th>
                 <th>Puzzle</th>
                 <th>Solve Count</th>
-                <th>Story</th>
+                <th>The Story So Far</th>
             </tr>
-    {% for (day, puzzles, plot) in puzzdays %}
+    {% for (day, puzzles) in puzzdays %}
         <tr>
             <td>{{ day }}</td><td></td><td></td>
             <td rowspan="{{ puzzles|length + 1}}">
-                <div class="row">
-                    <div class="three columns">
-                        <img src="/puzzles/{{ day }}1.png" style="width:80px;height:80px;">
-                        <img src="/puzzles/{{ day }}2.png" style="width:80px;height:80px;">
-                    </div>
-
-                    <div class="nine columns"><p style="font-size: 80%">{{ plot }}</p></div>
-                </div>
+                <a href="/puzzles/{{ day }}_plot.pdf">{{ day }} plot</a>
             </td>
         </tr>
             {% for puzzle in puzzles %}
@@ -38,4 +31,7 @@
     {% endfor %}
         </tbody>
     </table>
+    <div align="center">
+        <img src="/static/images/derpy_dragon.png" style="width:200px;">
+    </div>
 {% endblock %}
