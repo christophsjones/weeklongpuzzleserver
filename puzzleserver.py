@@ -11,8 +11,8 @@ import sys
 
 from mysql_config import mysqldb_config
 
-HUNT_STATUS = 'open'
-DATE_OFFSET = '2016-02-21 12:00:00'
+HUNT_STATUS = 'testing'
+DATE_OFFSET = '2016-02-19 12:00:00'
 
 def guess_autoescape(template_name):
     return True
@@ -21,6 +21,8 @@ templateLoader = FileSystemLoader(searchpath=getcwd() + '/templates')
 env = Environment(autoescape=guess_autoescape, loader=templateLoader)
 
 day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Meta', 6: 'Epilogue'}
+
+banhammer = []
 
 def standardize_guess(guess):
     alpha_guess = ''.join(e for e in guess if e.isalnum())
@@ -69,6 +71,8 @@ class Root(object):
             return closed_tmpl.render()
 
         error_tmpl = env.get_template('error.html')
+        if team_name in banhammer:
+            return error_tmpl.render(error="Your team has submitted too many times. Please contact csj@andrew.cmu.edu.")
         try:
             with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                 cursor = cnx.cursor()
@@ -115,10 +119,18 @@ class Root(object):
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
+                    brute_forcing = """SELECT COUNT(*) AS recent_submissions FROM submissions WHERE team_name = %s AND TIMESTAMPDIFF(MINUTE, submit_time, NOW()) <= 1"""
+                    cursor.execute(brute_forcing, (team_name,))
+                    if cursor.fetchone()['recent_submissions'] >= 100:
+                        banhammer.append(team_name)
+                    cursor.close()
+                    
+                    cursor = cnx.cursor()
                     submit_query = """INSERT INTO submissions (team_name, puzzle_name, guess) VALUES (%s, %s, %s)"""
                     cursor.execute(submit_query, (team_name, puzzle_name, guess))
                     cnx.commit()
                     cursor.close()
+
             except MySQLdb.Error as e:
                 pass # fail to record submissions silently
             
@@ -275,19 +287,13 @@ class Root(object):
                     res = cursor.fetchall()
                     cursor.close()
                     
-                    cursor = cnx.cursor()
-                    testing_plot = """SELECT release_date, content FROM plot"""
-                    cursor.execute(testing_plot)
-                    plot = cursor.fetchall()
-                    cursor.close()
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch puzzles')
 
             days = set([row['release_date'] for row in res])
             puzzdays = [(day, [row for row in res if row['release_date'] == day]) for day in days]
-            plotdays = {row['release_date']: row['content'] for row in plot}
-            puzzdays = [(day_ids[day], ps, plotdays[day]) for (day, ps) in puzzdays]
+            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('solutions.html')
             return tmpl.render(puzzdays=puzzdays)
@@ -310,12 +316,6 @@ class Root(object):
                     res = cursor.fetchall()
                     cursor.close()
 
-                    cursor = cnx.cursor()
-                    plot_query = """SELECT release_date, content FROM plot WHERE
-                    TIMESTAMPDIFF(DAY, '{date}', NOW()) >= release_date""".format(date=DATE_OFFSET)
-                    cursor.execute(plot_query)
-                    plot = cursor.fetchall()
-                    cursor.close()
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch puzzles')
@@ -325,8 +325,7 @@ class Root(object):
 
             days = set([row['release_date'] for row in res])
             puzzdays = [(day, [row for row in res if row['release_date'] == day]) for day in days]
-            plotdays = {row['release_date']: row['content'] for row in plot}
-            puzzdays = [(day_ids[day], ps, plotdays[day]) for (day, ps) in puzzdays]
+            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('puzzles.html')
             return tmpl.render(puzzdays=puzzdays)
