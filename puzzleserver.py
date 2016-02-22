@@ -12,7 +12,7 @@ import sys
 from mysql_config import mysqldb_config
 
 HUNT_STATUS = 'open'
-DATE_OFFSET = '2016-02-20 12:00:00'
+DATE_OFFSET = '2016-02-21 12:00:00'
 
 def guess_autoescape(template_name):
     return True
@@ -201,7 +201,7 @@ class Root(object):
                     testing_solves_query = """SELECT 
                         solves.team_name AS team_name, 
                         puzzles.puzzle_name AS puzzle_name, 
-                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%W %b %e %H:%i:%S"), "") AS solve_time, 
+                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%%W %%b %%e %%H:%%i:%%S"), "") AS solve_time, 
                         puzzles.pdf_name AS pdf_name, 
                         puzzles.release_date AS release_date, 
                         puzzles.number AS number 
