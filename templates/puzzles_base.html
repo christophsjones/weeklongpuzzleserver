@@ -1,37 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
-    <table style="table-layout: fixed">
-        <col style="width: 10ch">
-        <col style="width: 110ch">
-        <col style="width: 5ch">
-        <col style="width: 80ch">
-        <tbody>
-            <tr>
-                <th>Day</th>
-                <th>Puzzle</th>
-                <th>Solve Count</th>
-                <th>The Story So Far</th>
-            </tr>
     {% for (day, puzzles) in puzzdays %}
-        <tr>
-            <td>{{ day }}</td><td></td><td></td>
-            <td rowspan="{{ puzzles|length + 1}}">
-                <a href="/puzzles/{{ day }}_plot.pdf">{{ day }} plot</a>
-            </td>
-        </tr>
+        {% if loop.index != 1 %}<hr>{% endif %}
+        <h5> > {{ day }}</h5>
+        <p><a href="/puzzles/{{ day }}_plot.pdf">Derpy Hunt: Day {{ loop.index }}</a></p>
             {% for puzzle in puzzles %}
-            <tr>
-                <td></td>
-                <td><a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
+            <div class="row">
+                <div class="three columns">
+                    <a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
+                </div>
+                <div class="three columns">
+                    <p>Total solves: {{ puzzle['total_solves'] }}</p>
+                </div>
+                <div class="three columns">
                     {% block hints scoped %}{% endblock %}
-                </td>
-                <td>{{ puzzle['total_solves'] }}</td>
-            </tr>
+                </div>
+            </div>
             {% endfor %}
     {% endfor %}
-        </tbody>
-    </table>
-    <div align="center">
-        <img src="/static/images/derpy_dragon.png" style="width:200px;">
-    </div>
 {% endblock %}
