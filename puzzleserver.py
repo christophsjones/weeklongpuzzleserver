@@ -20,7 +20,7 @@ def guess_autoescape(template_name):
 templateLoader = FileSystemLoader(searchpath=getcwd() + '/templates')
 env = Environment(autoescape=guess_autoescape, loader=templateLoader)
 
-day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Meta'}
+day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Meta', 6: 'Epilogue'}
 
 def standardize_guess(guess):
     alpha_guess = ''.join(e for e in guess if e.isalnum())
@@ -179,7 +179,7 @@ class Root(object):
                     solves_query = """SELECT 
                         solves.team_name AS team_name, 
                         puzzles.puzzle_name AS puzzle_name, 
-                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%W %b %e %H:%i:%S"), "") AS solve_time, 
+                        IF(solves.solved = 1, DATE_FORMAT(solves.solve_time, "%%W %%b %%e %%H:%%i:%%S"), "") AS solve_time, 
                         puzzles.pdf_name AS pdf_name, 
                         puzzles.release_date AS release_date, 
                         puzzles.number AS number
@@ -219,9 +219,10 @@ class Root(object):
                     query = """SELECT 
                         teams.team_name AS team_name, 
                         SUM(solves.solved) AS total_solves, 
-                        DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time 
+                        DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time,
+                        MAX(solves.solve_time) AS solve_timestamp
                         FROM teams JOIN solves ON teams.team_name = solves.team_name 
-                        GROUP BY teams.team_name ORDER BY total_solves DESC, solve_time"""
+                        GROUP BY teams.team_name ORDER BY total_solves DESC, solve_timestamp"""
                     cursor.execute(query)
                     teams = [row for row in cursor]
                     cursor.close()
@@ -273,15 +274,22 @@ class Root(object):
                     
                     res = cursor.fetchall()
                     cursor.close()
+                    
+                    cursor = cnx.cursor()
+                    testing_plot = """SELECT release_date, content FROM plot"""
+                    cursor.execute(testing_plot)
+                    plot = cursor.fetchall()
+                    cursor.close()
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch puzzles')
 
             days = set([row['release_date'] for row in res])
             puzzdays = [(day, [row for row in res if row['release_date'] == day]) for day in days]
-            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
+            plotdays = {row['release_date']: row['content'] for row in plot}
+            puzzdays = [(day_ids[day], ps, plotdays[day]) for (day, ps) in puzzdays]
 
-            tmpl = env.get_template('solution_puzzles.html')
+            tmpl = env.get_template('solutions.html')
             return tmpl.render(puzzdays=puzzdays)
 
         else:
@@ -301,6 +309,13 @@ class Root(object):
                     cursor.execute(query)
                     res = cursor.fetchall()
                     cursor.close()
+
+                    cursor = cnx.cursor()
+                    plot_query = """SELECT release_date, content FROM plot WHERE
+                    TIMESTAMPDIFF(DAY, '{date}', NOW()) >= release_date""".format(date=DATE_OFFSET)
+                    cursor.execute(plot_query)
+                    plot = cursor.fetchall()
+                    cursor.close()
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch puzzles')
@@ -310,7 +325,8 @@ class Root(object):
 
             days = set([row['release_date'] for row in res])
             puzzdays = [(day, [row for row in res if row['release_date'] == day]) for day in days]
-            puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
+            plotdays = {row['release_date']: row['content'] for row in plot}
+            puzzdays = [(day_ids[day], ps, plotdays[day]) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('puzzles.html')
             return tmpl.render(puzzdays=puzzdays)
