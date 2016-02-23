@@ -7,6 +7,7 @@ import MySQLdb.cursors
 from contextlib import closing
 from collections import OrderedDict
 from os import getcwd
+from urllib import urlencode
 import sys
 
 from mysql_config import mysqldb_config
@@ -241,6 +242,9 @@ class Root(object):
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch team names')
+
+            for row in teams:
+                row['escaped_name'] = urlencode({'team': row['team_name']})
 
             tmpl = env.get_template('teams.html')
             return tmpl.render(teams=enumerate(teams))

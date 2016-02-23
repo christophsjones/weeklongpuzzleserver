@@ -17,7 +17,7 @@
                 {% for rank, team in teams %}
                 <tr>
                     <td>{{ 1 + rank }}</td>
-                    <td><a href="/teams?team={{ team['team_name'] }}">{{ team['team_name'] }}</a></td>
+                    <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
                     <td>{{ team['total_solves'] }}</td>
                     <td>{{ team['solve_time'] }}</td>
                 </tr>    
