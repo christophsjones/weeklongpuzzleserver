@@ -14,6 +14,7 @@ from mysql_config import mysqldb_config
 
 HUNT_STATUS = 'open'
 DATE_OFFSET = '2016-02-21 12:00:00'
+META_NUMBER = 10
 
 def guess_autoescape(template_name):
     return True
@@ -21,7 +22,7 @@ def guess_autoescape(template_name):
 templateLoader = FileSystemLoader(searchpath=getcwd() + '/templates')
 env = Environment(autoescape=guess_autoescape, loader=templateLoader)
 
-day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Meta', 6: 'Epilogue'}
+day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Thursday', 6: 'Friday'}
 
 banhammer = []
 
@@ -153,6 +154,16 @@ class Root(object):
                         cnx.commit()
                         cursor.close()
 
+                        if puzzles[puzzle_name]['number'] == META_NUMBER:
+                            epilogue = """It turns out that Andrew Moore, the Dean of SCS, was holding on to Derpy the whole time! You rush to his office."""
+                            cursor = cnx.cursor()
+                            meta_solved = """UPDATE teams SET meta_solved = 1 WHERE team_name = %s"""
+                            cursor.execute(meta_solved, (team_name,))
+                            cnx.commit()
+                            cursor.close
+                        else:
+                            epilogue = None
+
                 except MySQLdb.Error as e:
                     return error_tmpl.render(error='Could not update team solve stats. Please try submitting again.')
 
@@ -161,6 +172,7 @@ class Root(object):
                     team_name=team_name, 
                     puzzle_name=puzzle_name, 
                     guess=guess, 
+                    epilogue=epilogue
                 )
             else:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
@@ -224,7 +236,7 @@ class Root(object):
             puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('team.html')
-            return tmpl.render(team=team, puzzdays=puzzdays)
+            return tmpl.render(team=team, puzzdays=puzzdays, meta_number=META_NUMBER)
         else:
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
@@ -233,9 +245,12 @@ class Root(object):
                         teams.team_name AS team_name, 
                         SUM(solves.solved) AS total_solves, 
                         DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time,
-                        MAX(solves.solve_time) AS solve_timestamp
+                        MAX(solves.solve_time) AS solve_timestamp,
+                        teams.meta_solve_time AS meta_solve_time,
+                        teams.meta_solved AS meta_solved,
+                        IF(teams.meta_solved = 1, TIMESTAMPDIFF(second, teams.meta_solve_time, NOW()), SUM(solves.solved)) AS inner_sort
                         FROM teams JOIN solves ON teams.team_name = solves.team_name 
-                        GROUP BY teams.team_name ORDER BY total_solves DESC, solve_timestamp"""
+                        GROUP BY teams.team_name ORDER BY meta_solved DESC, inner_sort DESC, solve_timestamp"""
                     cursor.execute(query)
                     teams = [row for row in cursor]
                     cursor.close()
@@ -300,7 +315,7 @@ class Root(object):
             puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('solutions.html')
-            return tmpl.render(puzzdays=puzzdays)
+            return tmpl.render(puzzdays=puzzdays, meta_number=META_NUMBER)
 
         else:
             try:
@@ -332,7 +347,7 @@ class Root(object):
             puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
 
             tmpl = env.get_template('puzzles.html')
-            return tmpl.render(puzzdays=puzzdays)
+            return tmpl.render(puzzdays=puzzdays, meta_number=META_NUMBER)
 
     @cherrypy.expose
     @sanitize_unicode

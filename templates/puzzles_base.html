@@ -5,6 +5,10 @@
         <h5> > {{ day }}</h5>
         <p class="p-puzzle"><a href="/puzzles/{{ day }}_plot.pdf">Derpy Hunt: Day {{ loop.index }}</a></p>
             {% for puzzle in puzzles %}
+            {% if puzzle['number'] == meta_number %}
+            <hr>
+            <h5> > Meta </h5>
+            {% endif %}
             <div class="row">
                 <div class="four columns">
                     <a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
@@ -18,4 +22,5 @@
             </div>
             {% endfor %}
     {% endfor %}
+    {% block epilogue %} {% endblock %}
 {% endblock %}

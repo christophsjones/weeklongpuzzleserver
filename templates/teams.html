@@ -18,7 +18,7 @@
                 <tr>
                     <td>{{ 1 + rank }}</td>
                     <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
-                    <td>{{ team['total_solves'] }}</td>
+                    <td>{{ team['total_solves'] }}{% if team['meta_solved'] == 1%} + Meta{% endif %}</td>
                     <td>{{ team['solve_time'] }}</td>
                 </tr>    
                 {% endfor %}    

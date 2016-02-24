@@ -1,4 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-        <p>Your submission of {{ guess }} for the puzzle {{ puzzle_name }} was correct!</p>
+<p>Your submission of {{ guess }} for the puzzle {{ puzzle_name }} was correct!</p>
+{% if epilogue %}
+<p> {{epilogue}}</p>
+{% endif %}
 {% endblock %}
