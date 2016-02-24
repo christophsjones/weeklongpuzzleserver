@@ -5,6 +5,10 @@
         {% if loop.index != 1 %}<hr>{% endif %}
         <h5> > {{ day }}</h5>
             {% for puzzle in puzzles %}
+            {% if puzzle['number'] == meta_number %}
+            <hr>
+            <h5> > Meta </h5>
+            {% endif %}
             <div class="row">
                 <div class="four columns">
                     <p class="p-puzzle">{{ puzzle['puzzle_name'] }}</p>
