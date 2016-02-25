@@ -13,7 +13,7 @@ import sys
 from mysql_config import mysqldb_config
 
 HUNT_STATUS = 'open'
-DATE_OFFSET = '2016-02-21 12:00:00'
+DATE_OFFSET = '2016-02-21 16:30:00'
 META_NUMBER = 10
 
 def guess_autoescape(template_name):
