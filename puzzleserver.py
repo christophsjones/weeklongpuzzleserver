@@ -143,10 +143,10 @@ class Root(object):
                         check_query = """SELECT team_name, puzzle_name, solved 
                             FROM solves WHERE team_name = %s AND puzzle_name = %s"""
                         cursor.execute(check_query, (team_name, puzzle_name,))
+                        response = None
                         for row in cursor:
                             if row['solved']:
-                                cursor.close()
-                                return error_tmpl.render(error='Answer is correct, but your team already solved this puzzle.')
+                                response = 'Answer is correct, but your team already solved this puzzle.'
                         cursor.close()
 
                         cursor = cnx.cursor()
@@ -156,19 +156,19 @@ class Root(object):
                         cursor.close()
 
                         if puzzles[puzzle_name]['number'] == META_NUMBER:
-                            epilogue = """It turns out that Andrew Moore, the Dean of SCS, was holding on to Derpy the whole time! You sprint to his office (but not in real life), and give a hurried knock on the heavy door. In due time, it creeps open to reveal Andrew Moore himself holding a small Derpy dragon figure!
+                            epilogue = ["""It turns out that Andrew Moore, the Dean of SCS, was holding on to Derpy the whole time! You sprint to his office (but not in real life), and give a hurried knock on the heavy door. In due time, it creeps open to reveal Andrew Moore himself holding a small Derpy dragon figure!""",
                             
-                            "Excuse me, sir, uh... SCS Day is starting soon and... we could really use our mascot, Derpy the dragon." Your words are broken from your sprint over.
+                            """Excuse me, sir, uh... SCS Day is starting soon and... we could really use our mascot, Derpy the dragon." Your words are broken from your sprint over.""",
                             
-                            The Dean smiles at you, "Oh you mean this old guy? Ah, I see. Well, the thing is, Derpy isn't this year's mascot!" What? You're surprised. "You see, I chose this year's SCS Day mascot, and I've been using Derpy here as my model for comparison."
+                            """The Dean smiles at you, "Oh you mean this old guy? Ah, I see. Well, the thing is, Derpy isn't this year's mascot!" What? You're surprised. "You see, I chose this year's SCS Day mascot, and I've been using Derpy here as my model for comparison.""",
                             
-                            It all makes sense! That's why you've been seeing this other monstrous, colorful, way better drawn dragon around. That's the REAL SCS Day mascot, and Derpy here is just another derpy, awesome dragon. 
+                            """It all makes sense! That's why you've been seeing this other monstrous, colorful, way better drawn dragon around. That's the REAL SCS Day mascot, and Derpy here is just another derpy, awesome dragon.""",
                             
-                            "Anyway, you might as well have Derpy. We finished SCS Day planning long ago, and I think he'll be happier with you." Andrew Moore hands Derpy. Yours eyes are starting to tear up.
+                           """ "Anyway, you might as well have Derpy. We finished SCS Day planning long ago, and I think he'll be happier with you." Andrew Moore hands Derpy. Yours eyes are starting to tear up.""",
                             
-                            "Thank you... thank you so much." you manage to utter as Professor Moore begins to close the door. You made it! You finished!
+                            """"Thank you... thank you so much." you manage to utter as Professor Moore begins to close the door. You made it! You finished!""",
                             
-                            "Really, no problem," says Moore as he waves you bye. "See you at SCS Day!" he says. In the corner of your eye, you might have been imagining it, but you thought you saw a derpy foot give a tiny wave in return."""
+                            """"Really, no problem," says Moore as he waves you bye. "See you at SCS Day!" he says. In the corner of your eye, you might have been imagining it, but you thought you saw a derpy foot give a tiny wave in return."""]
                             cursor = cnx.cursor()
                             meta_solved = """UPDATE teams SET meta_solved = 1 WHERE team_name = %s"""
                             cursor.execute(meta_solved, (team_name,))
@@ -185,6 +185,7 @@ class Root(object):
                     team_name=team_name, 
                     puzzle_name=puzzle_name, 
                     guess=guess, 
+                    response=response,
                     epilogue=epilogue
                 )
             else:

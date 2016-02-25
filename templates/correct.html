@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <p>Your submission of {{ guess }} for the puzzle {{ puzzle_name }} was correct!</p>
+{% if response %}
+<p>{{ response }}</p>
+{% endif %}
 {% if epilogue %}
-<p> {{epilogue}}</p>
+{% for line in epilogue %}
+<p> {{line}}</p>
+{% endfor %}
+<img src="/static/images/dragon.png" style="width:900px">
 {% endif %}
 {% endblock %}
