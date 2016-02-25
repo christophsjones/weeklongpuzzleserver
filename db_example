@@ -1,5 +1,5 @@
 USE puzzleserver;
-INSERT INTO puzzles (puzzle_name, answer, release_date, number, pdf_name) VALUES ("Analogy", "FIRST", 1, 1, "Analogy"), ("Riddle", "MOON", 2, 1, "Riddle"), ("Logic", "WALKER", 3, 1, "Logic"), ("Meta", "NEILARMSTRONG", 4, 1, "Meta");
+INSERT INTO puzzles (puzzle_name, answer, release_date, number, pdf_name) VALUES ("Analogy", "FIRST", 1, 1, "Analogy"), ("Riddle", "MOON", 2, 1, "Riddle"), ("Logic", "WALKER", 3, 1, "Logic"), ("Nope", "NOPE", 4, 1, "Nope"), ("Meta", "NEILARMSTRONG", 4, 10, "Meta");
 INSERT INTO teams (team_name, password) VALUES ("teamTEAM", "teamTEAM"), ("floof by example", "floof");
-INSERT INTO solves (team_name, puzzle_name) VALUES ("teamTEAM", "Analogy"), ("teamTEAM", "Riddle"), ("teamTEAM", "Logic"), ("teamTEAM", "Meta"), ("floof by example", "Analogy"), ("floof by example", "Riddle"), ("floof by example", "Logic"), ("floof by example", "Meta");
+INSERT INTO solves (team_name, puzzle_name) VALUES ("teamTEAM", "Analogy"), ("teamTEAM", "Riddle"), ("teamTEAM", "Logic"), ("teamTEAM", "Meta"), ("floof by example", "Analogy"), ("floof by example", "Riddle"), ("floof by example", "Logic"), ("floof by example", "Meta"), ("floof by example", "Nope"), ("teamTEAM", "Nope");
 
