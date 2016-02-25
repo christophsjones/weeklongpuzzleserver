@@ -145,6 +145,7 @@ class Root(object):
                         cursor.execute(check_query, (team_name, puzzle_name,))
                         for row in cursor:
                             if row['solved']:
+                                cursor.close()
                                 return error_tmpl.render(error='Answer is correct, but your team already solved this puzzle.')
                         cursor.close()
 
@@ -246,8 +247,9 @@ class Root(object):
                         SUM(solves.solved) AS total_solves, 
                         DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time,
                         MAX(solves.solve_time) AS solve_timestamp,
-                        teams.meta_solve_time AS meta_solve_time,
                         teams.meta_solved AS meta_solved,
+                        IF(teams.meta_solved = 1, DATE_FORMAT(teams.meta_solve_time, "%W %b %e %H:%i:%S"), "") AS meta_solve_time,
+                        teams.meta_solve_time AS meta_solve_timestamp,
                         IF(teams.meta_solved = 1, TIMESTAMPDIFF(second, teams.meta_solve_time, NOW()), SUM(solves.solved)) AS inner_sort
                         FROM teams JOIN solves ON teams.team_name = solves.team_name 
                         GROUP BY teams.team_name ORDER BY meta_solved DESC, inner_sort DESC, solve_timestamp"""

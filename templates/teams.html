@@ -7,19 +7,22 @@
             <col style="width: 50ch">
             <col style="width: 20ch">
             <col style="width: 30ch">
+            <col style="width: 30ch">
             <tbody>
                 <tr>
                     <th>Rank</th>
                     <th>Team</th>
                     <th>Puzzles Solved</th>
                     <th>Last Solve Time</th>
+                    <th>Meta Solve Time</th>
                 </tr>
                 {% for rank, team in teams %}
                 <tr>
                     <td>{{ 1 + rank }}</td>
                     <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
-                    <td>{{ team['total_solves'] }}{% if team['meta_solved'] == 1%} + Meta{% endif %}</td>
+                    <td>{% if team['meta_solved'] == 1%}{{ team['total_solves'] - 1 }} + Meta{% else %}{{ team['total_solves'] }}{% endif %}</td>
                     <td>{{ team['solve_time'] }}</td>
+                    <td>{{ team['meta_solve_time'] }}</td>
                 </tr>    
                 {% endfor %}    
             </tbody>
