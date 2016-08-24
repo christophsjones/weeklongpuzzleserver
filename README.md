@@ -112,8 +112,6 @@ If a team tries to brute force solve by submitting over 100 queries in a minute,
 - Rank teams by average solve time, not by last solve time. 
 - Updating a row in “solves” MySQL table updates the solve_time, updating a row in “teams” table updates the meta_solve_time :(
 - make it so that you don't have to manually move puzzle PDFs each day
-- puzzle hint lengths too short
-- response lengths too short
 - add SSL
 - be able to view all teams that have solved a certain puzzle (wow!)
 
