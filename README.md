@@ -108,7 +108,6 @@ If a team tries to brute force solve by submitting over 100 queries in a minute,
 - null hints should not display (possibly create new hints table to allow for multiple hints/puzzle?)
 - hunt_soon.html should use DATE_OFFSET + 1 for start date
 - If tables are empty there can be bugs
-- Rank teams by average solve time, not by last solve time. 
 - Updating a row in “solves” MySQL table updates the solve_time, updating a row in “teams” table updates the meta_solve_time :(
 - make it so that you don't have to manually move puzzle PDFs each day
 - add SSL

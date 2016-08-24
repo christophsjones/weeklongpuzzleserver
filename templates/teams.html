@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>Teams are ranked by time to solve the metapuzzle, then total number of puzzles solved, then time of last solve.<br> Solve the metapuzzle to finish the hunt!</p>
+<p>Teams are ranked by total number of puzzles solved, then average solve time.<br> Have fun!</p>
         <table style="table-layout: fixed;">
             <col style="width: 5ch">
             <col style="width: 50ch">
@@ -12,14 +12,14 @@
                     <th>Rank</th>
                     <th>Team</th>
                     <th>Puzzles Solved</th>
-                    <th>Last/Meta Solve Time</th>
+                    <th>Average Solve Time (hrs)</th>
                 </tr>
                 {% for rank, team in teams %}
                 <tr>
                     <td>{{ 1 + rank }}</td>
                     <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
-                    <td>{% if team['meta_solved'] == 1%}{{ team['total_solves'] - 1 }} + Meta{% else %}{{ team['total_solves'] }}{% endif %}</td>
-                    <td>{% if team['meta_solved'] == 1%}{{ team['meta_solve_time'] }}{% else %}{{ team['solve_time'] }}{% endif %}</td>
+                    <td>{{ team['total_solves'] }}</td>
+                    <td>{{ team['solve_time'] }}</td>
                 </tr>    
                 {% endfor %}    
             </tbody>

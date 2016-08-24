@@ -247,17 +247,13 @@ class Root(object):
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
                     query = """SELECT 
-                        teams.team_name AS team_name, 
+                        solves.team_name AS team_name, 
                         teams.contact_email AS contact_email,
-                        SUM(solves.solved) AS total_solves, 
-                        DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time,
-                        MAX(solves.solve_time) AS solve_timestamp,
                         teams.meta_solved AS meta_solved,
-                        IF(teams.meta_solved = 1, DATE_FORMAT(teams.meta_solve_time, "%W %b %e %H:%i:%S"), "") AS meta_solve_time,
-                        teams.meta_solve_time AS meta_solve_timestamp,
-                        IF(teams.meta_solved = 1, TIMESTAMPDIFF(second, teams.meta_solve_time, NOW()), SUM(solves.solved)) AS inner_sort
-                        FROM teams JOIN solves ON teams.team_name = solves.team_name 
-                        GROUP BY teams.team_name ORDER BY meta_solved DESC, inner_sort DESC, solve_timestamp"""
+                        SUM(solves.solved) AS total_solves,
+                        AVG(IF(solves.solved = 1, TIMESTAMPDIFF(SECOND, TIMESTAMPADD(DAY, puzzles.release_date,'{date}'), solves.solve_time), NULL)) / 3600 AS solve_time
+                        FROM solves JOIN (teams, puzzles) ON teams.team_name = solves.team_name AND puzzles.puzzle_name = solves.puzzle_name
+                        GROUP BY solves.team_name ORDER BY total_solves DESC, solve_time""".format(date=DATE_OFFSET)
                     cursor.execute(query)
                     teams = [row for row in cursor]
                     cursor.close()
@@ -271,6 +267,9 @@ class Root(object):
 
             for row in teams: # put team names in URLs properly
                 row['escaped_name'] = urlencode({'team': row['team_name']})
+                if row['solve_time'] is None:
+                    row['solve_time'] = 0.0
+                row['solve_time'] = format(row['solve_time'], '.2f')
 
             tmpl = env.get_template('teams.html')
             return tmpl.render(teams=enumerate(teams))
