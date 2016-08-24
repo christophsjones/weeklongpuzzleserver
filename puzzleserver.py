@@ -10,6 +10,7 @@ from os import getcwd
 from urllib import urlencode
 from passlib.apps import custom_app_context as pwd_context
 import sys
+import re
 
 from mysql_config import mysqldb_config
 
@@ -247,6 +248,7 @@ class Root(object):
                     cursor = cnx.cursor()
                     query = """SELECT 
                         teams.team_name AS team_name, 
+                        teams.contact_email AS contact_email,
                         SUM(solves.solved) AS total_solves, 
                         DATE_FORMAT(MAX(solves.solve_time), "%W %b %e %H:%i:%S") AS solve_time,
                         MAX(solves.solve_time) AS solve_timestamp,
@@ -262,6 +264,10 @@ class Root(object):
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch team names')
+
+            # only rank teams with CMU email addresses
+            cmu_email = re.compile(r'\A(\w|[-.+%])+@(\w|\.)*cmu.edu\Z')
+            teams = [team for team in teams if team['contact_email'] is not None and cmu_email.match(team['contact_email'])]
 
             for row in teams: # put team names in URLs properly
                 row['escaped_name'] = urlencode({'team': row['team_name']})

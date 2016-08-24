@@ -105,8 +105,7 @@ When the hunt is over, change HUNT_STATUS = 'closed'. THIS RELEASES SOLUTIONS SO
 If a team tries to brute force solve by submitting over 100 queries in a minute, no more submissions from that team will be allowed (and team_name will be stored in "banhammer" list in puzzleserver.py). To free them up, just resave puzzleserver.py (this reloads the server and resets "banhammer = []"). Or manually add teams you don't like to this list.
 
 ## TODO
-- leaderboard only displays CMU teams
-- null hints should not display
+- null hints should not display (possibly create new hints table to allow for multiple hints/puzzle?)
 - hunt_soon.html should use DATE_OFFSET + 1 for start date
 - If tables are empty there can be bugs
 - Rank teams by average solve time, not by last solve time. 
