@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS 'puzzleserver';
+CREATE USER 'pserver'@'localhost' IDENTIFIED BY 'YOUR_PASSWORD_HERE';
+GRANT ALL PRIVILEGES ON 'puzzleserver'.* TO 'pserver'@'localhost';

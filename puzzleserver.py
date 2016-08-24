@@ -8,13 +8,14 @@ from contextlib import closing
 from collections import OrderedDict
 from os import getcwd
 from urllib import urlencode
+from passlib.apps import custom_app_context as pwd_context
 import sys
 
 from mysql_config import mysqldb_config
 
-HUNT_STATUS = 'closed'
+HUNT_STATUS = 'closed' # open, closed, or testing
 DATE_OFFSET = '2016-02-21 16:30:00'
-META_NUMBER = 10
+META_NUMBER = 10 # don't change this unless you have >10 puzzles/day
 
 def guess_autoescape(template_name):
     return True
@@ -37,6 +38,7 @@ def handle_error(*args, **kwargs):
 
 class Root(object):
 
+    # all string arguments must be sanitized
     def sanitize_unicode(resource):
         error_tmpl = env.get_template('error.html')
         def safety_first(*args, **kwargs):
@@ -98,22 +100,23 @@ class Root(object):
         except MySQLdb.Error as e:
             return error_tmpl.render(error="Could not fetch puzzle list")
 
+        # no puzzles yet, hunt hasn't started
         if not puzzles:
             tmpl = env.get_template('hunt_soon.html')
             return tmpl.render()
 
-        if team_name is not None:
+        if team_name is not None: # making a solve attempt
             if puzzle_name == "None":
                 return error_tmpl.render(error='Gotta pick a puzzle')
 
             if team_name not in teams:
                 return error_tmpl.render(error='Invalid team name')
-            if password != teams[team_name]['password']:
+            if not pwd_context.verify(password, teams[team_name]['password']): 
                 return error_tmpl.render(error='Invalid password for team ' + team_name)
 
             if puzzle_name not in puzzles:
                 return error_tmpl.render(error='Invalid puzzle name')
-            if not isinstance(guess, str) and not isinstance(guess, unicode):
+            if not isinstance(guess, str) and not isinstance(guess, unicode): # NOT covered by sanitize_unicode b/c only checks strings
                 return error_tmpl.render(error='Invalid guess')
 
             guess = standardize_guess(guess)
@@ -156,26 +159,13 @@ class Root(object):
                         cursor.close()
 
                         if puzzles[puzzle_name]['number'] == META_NUMBER:
-                            epilogue = ["""It turns out that Andrew Moore, the Dean of SCS, was holding on to Derpy the whole time! You sprint to his office (but not in real life), and give a hurried knock on the heavy door. In due time, it creeps open to reveal Andrew Moore himself holding a small Derpy dragon figure!""",
-                            
-                            """Excuse me, sir, uh... SCS Day is starting soon and... we could really use our mascot, Derpy the dragon." Your words are broken from your sprint over.""",
-                            
-                            """The Dean smiles at you, "Oh you mean this old guy? Ah, I see. Well, the thing is, Derpy isn't this year's mascot!" What? You're surprised. "You see, I chose this year's SCS Day mascot, and I've been using Derpy here as my model for comparison.""",
-                            
-                            """It all makes sense! That's why you've been seeing this other monstrous, colorful, way better drawn dragon around. That's the REAL SCS Day mascot, and Derpy here is just another derpy, awesome dragon.""",
-                            
-                           """ "Anyway, you might as well have Derpy. We finished SCS Day planning long ago, and I think he'll be happier with you." Andrew Moore hands Derpy. Yours eyes are starting to tear up.""",
-                            
-                            """"Thank you... thank you so much." you manage to utter as Professor Moore begins to close the door. You made it! You finished!""",
-                            
-                            """"Really, no problem," says Moore as he waves you bye. "See you at SCS Day!" he says. In the corner of your eye, you might have been imagining it, but you thought you saw a derpy foot give a tiny wave in return."""]
-                            cursor = cnx.cursor()
-                            meta_solved = """UPDATE teams SET meta_solved = 1 WHERE team_name = %s"""
-                            cursor.execute(meta_solved, (team_name,))
+                            meta_solved = True
+                            store_meta_solved = """UPDATE teams SET meta_solved = 1 WHERE team_name = %s"""
+                            cursor.execute(store_meta_solved, (team_name,))
                             cnx.commit()
                             cursor.close
                         else:
-                            epilogue = None
+                            meta_solved = False
 
                 except MySQLdb.Error as e:
                     return error_tmpl.render(error='Could not update team solve stats. Please try submitting again.')
@@ -186,9 +176,9 @@ class Root(object):
                     puzzle_name=puzzle_name, 
                     guess=guess, 
                     response=response,
-                    epilogue=epilogue
+                    meta_solved=meta_solved
                 )
-            else:
+            else: # incorrect answer, possibly receive response
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
                     response_query = """SELECT puzzle_name, guess, response 
@@ -204,14 +194,14 @@ class Root(object):
                     guess=guess,
                     responses=responses,
                 )
-        else:
+        else: # not making a solve attempt
             tmpl = env.get_template('solve.html')
             return tmpl.render(puzzles=puzzles.keys())
 
     @cherrypy.expose
     @sanitize_unicode
     def teams(self, team=None):
-        if team is not None:
+        if team is not None: # display stats for a specific team
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
@@ -241,7 +231,7 @@ class Root(object):
             except MySQLdb.Error as e:
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch team information for team ' + team)
-            if not solves:
+            if not solves: # hunt hasn't started
                 soon_tmpl = env.get_template("team_soon.html")
                 return soon_tmpl.render(team=team)
 
@@ -251,7 +241,7 @@ class Root(object):
 
             tmpl = env.get_template('team.html')
             return tmpl.render(team=team, puzzdays=puzzdays, meta_number=META_NUMBER)
-        else:
+        else: 
             try:
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
@@ -273,12 +263,13 @@ class Root(object):
                 error_tmpl = env.get_template('error.html')
                 return error_tmpl.render(error='Could not fetch team names')
 
-            for row in teams:
+            for row in teams: # put team names in URLs properly
                 row['escaped_name'] = urlencode({'team': row['team_name']})
 
             tmpl = env.get_template('teams.html')
             return tmpl.render(teams=enumerate(teams))
 
+    # for whatever reason /puzzles/hint/Analogy passes ['hint', 'Analogy'] to *args
     @cherrypy.expose
     def puzzles(self, *args):
         if len(args) != 0:
@@ -385,7 +376,7 @@ class Root(object):
                 with closing(MySQLdb.connect(**mysqldb_config)) as cnx:
                     cursor = cnx.cursor()
                     register_query = """INSERT INTO teams (team_name, password, contact_email, contact_name) VALUES (%s, %s, %s, %s)"""
-                    cursor.execute(register_query, (team_name, password, email, name))
+                    cursor.execute(register_query, (team_name, pwd_context.encrypt(password), email, name))
                     cnx.commit()
                     cursor.close()
 

@@ -1,5 +1,8 @@
 /puzzles
 /puzzleshidden
 *.pyc
-.gitignore
-puzzleserver.py
+*.swp
+*.DS_STORE
+mysql_config.py
+db_setup
+
