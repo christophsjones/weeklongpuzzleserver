@@ -14,7 +14,7 @@
                     <a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
                 </div>
                 <div class="three columns">
-                    <p class="p-puzzle">Total solves: {{ puzzle['total_solves'] }}</p>
+                    <p class="p-puzzle">Total solves: <a href="/puzzles/stats/{{ puzzle['pdf_name'] }}">{{ puzzle['total_solves'] }}</a></p>
                 </div>
                 <div class="three columns">
                     {% block hints scoped %}{% endblock %}

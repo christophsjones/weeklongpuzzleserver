@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h4 align="center">{{ puzzle }}</h4>
+<h5 align="center">Total solves: {{ solves }}</h5>
+    <table style="table-layout: fixed;">
+        <col style="width: 30ch">
+        <col style="width: 50ch">
+        <tbody>
+            <tr>
+                <th>Solve Time</th>
+                <th>Team</th>
+            </tr>
+            {% for team in teams %}
+            <tr>
+                <td>{{ team['solve_time'] }}</td>
+                <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

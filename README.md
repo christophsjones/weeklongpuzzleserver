@@ -111,6 +111,10 @@ If a team tries to brute force solve by submitting over 100 queries in a minute,
 - Updating a row in “solves” MySQL table updates the solve_time, updating a row in “teams” table updates the meta_solve_time :(
 - make it so that you don't have to manually move puzzle PDFs each day
 - add SSL
-- be able to view all teams that have solved a certain puzzle (wow!)
+
+## Things that would make your puzzlehunt more fun
+- allow more customization of team info. E.g. a short blurb or a picture are displayed on your team page! :)
+- add plot/pictures onto the puzzle page directly, or have a separate plot tab
+- change the CSS/theme
 
 
