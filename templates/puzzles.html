@@ -1,7 +1,7 @@
 {% extends "puzzles_base.html" %}
 {% block hints %}
-{% if puzzle['hint_avail'] %}
-(<a href="/puzzles/hint/{{ puzzle['pdf_name'] }}">hint</a>)
+{% if not outer_loop.last %}
+(<a href="/puzzles/hint/{{ puzzle.Puzzles.pdf_name }}">hint</a>)
 {% endif %}
 {% endblock %}
 

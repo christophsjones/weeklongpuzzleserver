@@ -1,20 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
     {% for (day, puzzles) in puzzdays %}
+        {% set outer_loop = loop %}
         {% if loop.index != 1 %}<hr>{% endif %}
         <h5> > {{ day }}</h5>
         <p class="p-puzzle"><a href="/puzzles/{{ day }}_plot.pdf">Derpy Hunt: Day {{ loop.index }}</a></p>
             {% for puzzle in puzzles %}
-            {% if puzzle['number'] == meta_number %}
+            {% if puzzle.Puzzles.number == meta_number %}
             <hr>
             <h5> > Meta </h5>
             {% endif %}
             <div class="row">
                 <div class="four columns">
-                    <a href="/puzzles/{{ puzzle['pdf_name'] }}.pdf">{{ puzzle['puzzle_name'] }}</a>
+                    <a href="/puzzles/{{ puzzle.Puzzles.pdf_name }}.pdf">{{ puzzle.Puzzles.puzzle_name }}</a>
                 </div>
                 <div class="three columns">
-                    <p class="p-puzzle">Total solves: <a href="/puzzles/stats/{{ puzzle['pdf_name'] }}">{{ puzzle['total_solves'] }}</a></p>
+                    <p class="p-puzzle">Total solves: <a href="/puzzles/stats/{{ puzzle.Puzzles.pdf_name }}">{{ puzzle.solves }}</a></p>
                 </div>
                 <div class="three columns">
                     {% block hints scoped %}{% endblock %}

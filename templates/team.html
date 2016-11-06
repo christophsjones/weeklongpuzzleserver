@@ -5,16 +5,16 @@
         {% if loop.index != 1 %}<hr>{% endif %}
         <h5> > {{ day }}</h5>
             {% for puzzle in puzzles %}
-            {% if puzzle['number'] == meta_number %}
+            {% if puzzle.Puzzles.number == meta_number %}
             <hr>
             <h5> > Meta </h5>
             {% endif %}
             <div class="row">
                 <div class="four columns">
-                    <p class="p-puzzle"><a href="/puzzles/stats/{{ puzzle['pdf_name'] }}">{{ puzzle['puzzle_name'] }}</a></p>
+                    <p class="p-puzzle"><a href="/puzzles/stats/{{ puzzle.Puzzles.pdf_name }}">{{ puzzle.Puzzles.puzzle_name }}</a></p>
                 </div>
                 <div class="five columns">
-                    <p class="p-puzzle">Solve Time: {{ puzzle['solve_time'] }}</p>
+                    <p class="p-puzzle">Solve Time: {{ puzzle.solve_time if puzzle.solve_time is not none else "" }}</p>
                 </div>
             </div>
             {% endfor %}

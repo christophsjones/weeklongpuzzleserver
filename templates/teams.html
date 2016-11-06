@@ -14,12 +14,12 @@
                     <th>Puzzles Solved</th>
                     <th>Average Solve Time (hrs)</th>
                 </tr>
-                {% for rank, team in teams %}
+                {% for team in teams %}
                 <tr>
-                    <td>{{ 1 + rank }}</td>
-                    <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
-                    <td>{{ team['total_solves'] }}</td>
-                    <td>{{ team['solve_time'] }}</td>
+                    <td>{{ loop.index }}</td>
+                    <td><a href="/teams?{{ team.Teams.escaped_name }}">{{ team.Teams.team_name }}</a></td>
+                    <td>{{ team.total_solves }}</td>
+                    <td>{{ "{0:0.2f}".format((team.avg_solve_time if team.avg_solve_time is not none else 0) / 3600) }}</td>
                 </tr>    
                 {% endfor %}    
             </tbody>

@@ -12,8 +12,8 @@
             </tr>
             {% for team in teams %}
             <tr>
-                <td>{{ team['solve_time'] }}</td>
-                <td><a href="/teams/?{{ team['escaped_name'] }}">{{ team['team_name'] }}</a></td>
+                <td>{{ team.solve_time }}</td>
+                <td><a href="/teams?{{ team.escaped_name }}">{{ team.team_name }}</a></td>
             </tr>
             {% endfor %}
         </tbody>
