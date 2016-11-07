@@ -1,6 +1,6 @@
 {% extends "puzzles_base.html" %}
 {% block hints %}
-{% if not outer_loop.last %}
+{% if puzzle.time_difference > 0 %}
 (<a href="/puzzles/hint/{{ puzzle.Puzzles.pdf_name }}">hint</a>)
 {% endif %}
 {% endblock %}

@@ -11,9 +11,8 @@ from functools import wraps
 from sqlalchemy import exists, func, text
 from passlib.apps import custom_app_context as pwd_context
 
-#TODO describe better
-HUNT_STATUS = 'open' # open, closed, or testing
-DATE_OFFSET = datetime.datetime.strptime('2016-10-20 16:30:00', '%Y-%m-%d %H:%M:%S')
+HUNT_STATUS = 'open' # open: before+during hunt, closed: hunt over+solutions, testing: everything available
+DATE_OFFSET = datetime.datetime.strptime('2016-11-03 16:30:00', '%Y-%m-%d %H:%M:%S') # set to the Sunday before. First puzzles released 24hr after this
 META_NUMBER = 10 # don't change this unless you have >10 puzzles/day
 
 STAFF_CONTACT = 'csj@andrew.cmu.edu'
@@ -22,7 +21,6 @@ day_ids = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday'
 
 banhammer = []
 
-#TODO move to utility function file
 def standardize_guess(guess):
     alpha_guess = ''.join(e for e in guess if e.isalnum())
     return alpha_guess.upper()
@@ -171,7 +169,7 @@ def teams():
 
     else: 
         time_difference = func.timestampdiff(text('SECOND'), func.timestampadd(text('DAY'), models.Puzzles.release_date, DATE_OFFSET), models.Solves.solve_time)
-        total_solves = func.count(models.Solves).label('total_solves')
+        total_solves = func.count(models.Solves.solve_time).label('total_solves')
         avg_solve_time = func.avg(time_difference).label('avg_solve_time')
         team_rows = db.session.query(models.Teams, total_solves, avg_solve_time).outerjoin(models.Solves).outerjoin(models.Puzzles).group_by(models.Teams).order_by(total_solves.desc(), avg_solve_time)
 
@@ -225,14 +223,15 @@ def whatis():
 @secret_until_start
 def puzzles():
     #TODO count only CMU teams?
-    puzzle_rows = db.session.query(models.Puzzles, func.count(models.Solves).label('solves')).join(models.Solves).group_by(models.Puzzles).order_by(models.Puzzles.release_date, models.Puzzles.number)
+
+    time_difference = func.timestampdiff(text('DAY'), DATE_OFFSET, func.now()) - models.Puzzles.release_date
+
+    puzzle_rows = db.session.query(models.Puzzles, func.count(models.Solves.solve_time).label('solves'), time_difference.label('time_difference')).outerjoin(models.Solves).group_by(models.Puzzles).order_by(models.Puzzles.release_date, models.Puzzles.number)
     if HUNT_STATUS == "open":
-        time_difference = func.timestampdiff(text('DAY'), DATE_OFFSET, func.now())
-        puzzle_rows = puzzle_rows.filter(time_difference >= models.Puzzles.release_date)
+        puzzle_rows = puzzle_rows.filter(time_difference >= 0)
 
     if not puzzle_rows:
         return render_template("hunt_soon.html")
-
     days = set([row.Puzzles.release_date for row in puzzle_rows])
     puzzdays = [(day, [row for row in puzzle_rows if row.Puzzles.release_date == day]) for day in days]
     puzzdays = [(day_ids[day], ps) for (day, ps) in puzzdays]
@@ -275,13 +274,12 @@ def hint(pdf_name):
         return render_template('error.html', error='Unknown puzzle name')
     return render_template('hint.html', puzzle_name=puzzle.puzzle_name, hint=puzzle.hint)
 
-
-if __name__ == "__main__":
-    if 'prod' in sys.argv:
-        app.run(host='0.0.0.0', port=8080, debug=False)
-    else:
-        app.run(debug=True)
-
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', errpr='Page not found'), 404
+
+if __name__ == "__main__":
+    if 'prod' in sys.argv:
+        app.run(host='0.0.0.0', port=8080, debug=True)
+    else:
+        app.run()
