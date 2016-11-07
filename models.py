@@ -1,7 +1,11 @@
 from imports import *
 from sqlalchemy import ForeignKey, func
+from sqlalchemy_utils import database_exists, create_database
 
 import datetime
+
+if not database_exists(db.engine.url):
+    create_database(db.engine.url)
 
 db.Model.metadata.reflect(db.engine)
 
@@ -53,3 +57,5 @@ class Teams(db.Model):
     contact_email = db.Column(db.String(50))
     meta_solved = db.Column(db.Integer, default=0)
     meta_solve_time = db.Column(db.DateTime, default=func.now(), onupdate=func.now()) 
+
+db.create_all()

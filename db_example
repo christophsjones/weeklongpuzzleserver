@@ -1,6 +1,7 @@
 USE puzzleserver;
-INSERT INTO puzzles (puzzle_name, answer, release_date, number, pdf_name) VALUES ("Analogy", "FIRST", 1, 1, "Analogy"), ("Riddle", "MOON", 2, 1, "Riddle"), ("Logic", "WALKER", 3, 1, "Logic"), ("Meta", "NEILARMSTRONG", 4, 10, "Meta");
+INSERT INTO puzzles (puzzle_name, answer, release_date, number, pdf_name, hint) VALUES ("Analogy", "FIRST", 1, 1, "Analogy", "Who are they?"), ("Riddle", "MOON", 2, 1, "Riddle", "What am I?"), ("Logic", "WALKER", 3, 1, "Logic", "What do they have in common?"), ("Meta", "NEILARMSTRONG", 4, 10, "Meta", "Read your answers in order"");
 INSERT INTO teams (team_name, password, contact_email) VALUES ("teamTEAM", "$6$rounds=635165$39iXLYH1dOgEyEf3$afSHkkumCw87OHxhOhvl8/CbWmvPOU56YtJDtoj47OKPbNy8GY/f/8lS5vVMmTphLsK5gQqwD7TR.epT0Pco/0", "notemail@andrew.cmu.edu"), ("floof by example", "$6$rounds=684840$O2UvwffUbub1D./S$6GPD.W5lGZr.uIstvPpXlOlCU/z1XB6g3yjH0Vnck98bZiDIptggmJulKY7latPtx0jfMg8/HWDFhUlnTIUQq0", "notemail@andrew.cmu.edu");
 -- "teamTEAM" password is "teamTEAM", "floof by example" password is "floof"
-INSERT INTO solves (team_name, puzzle_name) VALUES ("teamTEAM", "Analogy"), ("teamTEAM", "Riddle"), ("teamTEAM", "Logic"), ("teamTEAM", "Meta"), ("floof by example", "Analogy"), ("floof by example", "Riddle"), ("floof by example", "Logic"), ("floof by example", "Meta");
+INSERT INTO responses (puzzle_name, guess, response) VALUES ("Meta", "BUZZALDRIN", "First stepper");
+-- INSERT INTO solves (team_name, puzzle_name) VALUES ("teamTEAM", "Analogy"), ("teamTEAM", "Riddle"), ("teamTEAM", "Logic"), ("teamTEAM", "Meta"), ("floof by example", "Analogy"), ("floof by example", "Riddle"), ("floof by example", "Logic"), ("floof by example", "Meta");
 
