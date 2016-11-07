@@ -29,7 +29,7 @@ To set up the included test puzzles in the database, run
 mysql -u root -p < db_examples
 ```
 
-How to remove test puzzles: log into MySQL and drop all the tables :P restart server
+How to remove test puzzles: log into MySQL and drop all the tables. Remove the PDFs from /puzzles. Restart server
 
 Change the contact_name in puzzleserver.py to your own email address!!
 
