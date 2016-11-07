@@ -1,8 +1,3 @@
-import MySQLdb.cursors
+SQLALCHEMY_DATABASE_URI = 'mysql://<username>:<password>@localhost/puzzleserver'
 
-mysqldb_config = {
-    'user': 'pserver',
-    'passwd': 'YOUR_PASSWORD_HERE',
-    'db': 'puzzleserver',
-    'cursorclass': MySQLdb.cursors.DictCursor,
-    }
+SQLALCHEMY_TRACK_MODIFICATIONS = False

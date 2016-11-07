@@ -12,7 +12,7 @@ from sqlalchemy import exists, func, text
 from passlib.apps import custom_app_context as pwd_context
 
 #TODO describe better
-HUNT_STATUS = 'open' # open, closed, or testing
+HUNT_STATUS = 'testing' # open, closed, or testing
 DATE_OFFSET = datetime.datetime.strptime('2016-10-20 16:30:00', '%Y-%m-%d %H:%M:%S')
 META_NUMBER = 10 # don't change this unless you have >10 puzzles/day
 

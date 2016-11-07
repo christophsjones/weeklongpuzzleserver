@@ -5,11 +5,8 @@ Influenced by the design of Australian puzzlehunt websites such as http://www.ma
 Short and (hopefully) easy to use and improve puzzlehunt site.
 
 Things you need:
-- CherryPy (pip install cherrypy)
 - MySQL (apt-get install mysql)
-- mysqldb (pip install MySQL-python)
-- Jinja2 (pip install jinja2)
-- passlib (pip install pass lib I think?)
+- Flask+SQLAlchemy (pip install -r requirements.txt)
 
 ### Initial Setup
 
@@ -17,37 +14,19 @@ Need a server? I had FREE student DigitalOcean credit and Namecheap credit from 
 
 Install the packages above. When you install MySQL, make sure to set your own password for the “root” user (default is either ‘’ or ‘root’, I forget). 
 
-Now,  navigate to the root of this repo. Two files have private password information you need to decide on: PUBLIC_db_setup and PUBLIC_mysql_config.py. Remove the "PUBLIC_" prefix from the filename of each and replace YOUR_PASSWORD_HERE in each file with your choice of password that the server will use to access MySQL (db_setup sets the password and mysql_config stores it).
+Now,  navigate to the root of this repo. The database config has private password information you need to decide on. Remove the "PUBLIC_" prefix from PUBLIC_mysql_config.py and replace <username> and <password> with MySQL fields, either <username> = "root" or make a new one.
 
-Time to set up the MySQL database (each will prompt you for your root password):
-
-
-```
-mysql -u root -p < db_setup
-
-mysql -u root -p < db_tables
-```
-
-To set up the included test puzzles in the database, run
-```
-mysql -u root -p < db_examples
-```
-
-Ok, test it out online! Get the server running with
+Start the server for the first time to set up the database:
 
 ```
 python puzzleserver.py
 ```
 
-You should now be able to access the page at http://localhost:8090. Most pages will tell you “The hunt has ended!”. To see everything, change the line from puzzleserver.py
+You should now be able to access the page at http://localhost:5000. 
 
+To set up the included test puzzles in the database, run
 ```
-HUNT_STATUS = ‘closed’
-```
-to
-
-```
-HUNT_STATUS = ‘testing’
+mysql -u root -p < db_examples
 ```
 
 ## Running a Hunt
@@ -82,9 +61,9 @@ Put solutions in /puzzles. AS ABOVE THEY WILL BE IMMEDIATELY VISIBLE TO ANYONE W
 
 ### 5. Hit start
 
-In puzzleserver.py set the DATE_OFFSET to the Sunday before the hunt. Because Monday = 1 the Monday puzzles are released 1 day = 24 hours after DATE_OFFSET. Set HUNT_STATUS = 'open'. No puzzles will be visible until that Monday!
+In puzzleserver.py set the DATE_OFFSET to the Sunday before the hunt. Set HUNT_STATUS = 'open' (DON'T LEAVE IT IN TESTING!). No puzzles will be visible until that Monday.
 
-You can run in production mode e.g. on port 80 and serving to Internetz by 
+You can run in production mode e.g. on port 80 and serving to Internet by 
 ```
 python puzzleserver.py prod
 ```
@@ -105,15 +84,14 @@ When the hunt is over, change HUNT_STATUS = 'closed'. THIS RELEASES SOLUTIONS SO
 If a team tries to brute force solve by submitting over 100 queries in a minute, no more submissions from that team will be allowed (and team_name will be stored in "banhammer" list in puzzleserver.py). To free them up, just resave puzzleserver.py (this reloads the server and resets "banhammer = []"). Or manually add teams you don't like to this list.
 
 ## TODO
-- null hints should not display (possibly create new hints table to allow for multiple hints/puzzle?)
 - hunt_soon.html should use DATE_OFFSET + 1 for start date
 - If tables are empty there can be bugs
-- Updating a row in “solves” MySQL table updates the solve_time, updating a row in “teams” table updates the meta_solve_time :(
+- Updating a row in “teams” table updates the meta_solve_time :(
 - make it so that you don't have to manually move puzzle PDFs each day
 - add SSL
 
 ## Things that would make your puzzlehunt more fun
-- allow more customization of team info. E.g. a short blurb or a picture are displayed on your team page! :)
+- allow more customization of team info. E.g. a short blurb or a picture are displayed on your team page! :) (Flask sessions make this easy)
 - add plot/pictures onto the puzzle page directly, or have a separate plot tab
 - change the CSS/theme
 
