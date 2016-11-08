@@ -280,6 +280,6 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     if 'prod' in sys.argv:
-        app.run(host='0.0.0.0', port=8080, debug=True)
+        app.run(host='0.0.0.0', port=8080)
     else:
-        app.run()
+        app.run(debug=True)
