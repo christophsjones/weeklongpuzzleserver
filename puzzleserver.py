@@ -4,6 +4,7 @@ import models
 import re
 import sys
 import datetime
+import os
 from urllib import urlencode
 from collections import OrderedDict
 from functools import wraps
@@ -173,7 +174,6 @@ def teams():
         avg_solve_time = func.avg(time_difference).label('avg_solve_time')
         team_rows = db.session.query(models.Teams, total_solves, avg_solve_time).outerjoin(models.Solves).outerjoin(models.Puzzles).group_by(models.Teams).order_by(total_solves.desc(), avg_solve_time)
 
-        # TODO puzzle stats still include non-CMU teams
         # only rank teams with CMU email addresses
         cmu_email = re.compile(r'\A(\w|[-.+%])+@(\w|\.)*cmu.edu\Z')
         teams = [row for row in team_rows if row.Teams.contact_email is not None and cmu_email.match(row.Teams.contact_email)]
@@ -222,7 +222,7 @@ def whatis():
 @app.route('/puzzles')
 @secret_until_start
 def puzzles():
-    #TODO count only CMU teams?
+    #TODO solve count only CMU teams?
 
     time_difference = func.timestampdiff(text('DAY'), DATE_OFFSET, func.now()) - models.Puzzles.release_date
 
@@ -241,9 +241,25 @@ def puzzles():
 
     return render_template('solutions.html', puzzdays=puzzdays, meta_number=META_NUMBER)
 
+@app.route("/puzzles/<string:path>")
+def get_pdf(path):
+    puzzle_name, ext = os.path.splitext(path)
+    if ext != '.pdf':
+        return abort(404)
+    
+    time_difference = (datetime.datetime.now() - DATE_OFFSET).days
+    if puzzle_name in [day_ids[i] + '_plot' for i in range(1, min(time_difference, 7))]:
+        return send_from_directory('puzzles', path)
+
+    if db.session.query(exists().where(models.Puzzles.puzzle_name == puzzle_name).where(models.Puzzles.release_date <= time_difference)).scalar():
+        return send_from_directory('puzzles', path)
+
+    return abort(404)
+
 @app.route('/puzzles/stats/<string:pdf_name>')
 @secret_until_start
 def stats(pdf_name):
+    # TODO puzzle stats still include non-CMU teams
     puzzle_rows = db.session.query(models.Puzzles).filter_by(pdf_name=pdf_name)
     if HUNT_STATUS == "open":
         time_difference = func.timestampdiff(text('DAY'), DATE_OFFSET, func.now())
@@ -276,7 +292,7 @@ def hint(pdf_name):
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('error.html', errpr='Page not found'), 404
+    return render_template('error.html', error='Page not found'), 404
 
 if __name__ == "__main__":
     if 'prod' in sys.argv:
